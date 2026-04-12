@@ -39,6 +39,8 @@ int c_pal, m_pal;
 int n_fil;
 int n_col;
 
+char numero;
+
 /* * Donada una posició on la pilota ha xocat, comprova si és un bloc de lletres.
  * Si ho és, esborra tot el bloc de la pantalla i redueix el comptador de blocs.
  */
@@ -153,7 +155,7 @@ int mou_pilota(void)
             c_pil = c_h;
             /* Si estem dins del tauler, la pintem. Si passem la línia, s'ha colat */
             if (f_pil != n_fil - 1)
-                win_escricar(f_pil, c_pil, '1', INVERS);
+                win_escricar(f_pil, c_pil, numero, INVERS);
             else
                 fora = 1;
         }
@@ -171,8 +173,8 @@ int mou_pilota(void)
 
 int main(int n_args, char *ll_args[])
 {
-    if (n_args < 12)
-        exit(1);
+    // if (n_args < 13)
+    //   exit(1);
 
     id_mem = atoi(ll_args[1]);
     n_fil = atoi(ll_args[2]);
@@ -185,6 +187,7 @@ int main(int n_args, char *ll_args[])
     nblocs = atoi(ll_args[9]);
     c_pal = atoi(ll_args[10]);
     m_pal = atoi(ll_args[11]);
+    numero = (char)ll_args[12][0];
 
     p_mem = map_mem(id_mem);
     win_set(p_mem, n_fil, n_col);

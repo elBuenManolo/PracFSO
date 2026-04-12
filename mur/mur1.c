@@ -79,6 +79,9 @@ float vel_f, vel_c; /* velocitat de la pilota (components horitzontal i vertical
 int id_mem;	 /* identificador de la memòria compartida creada */
 void *p_mem; /* punter cap a la zona de memòria mapejada */
 
+int minuts, segons;
+int comptador_retard = 0;
+
 /* * Llegeix els paràmetres del joc des d'un fitxer de text.
  * Retorna 0 si tot va bé, o un codi d'error (1-5) si algun paràmetre és incorrecte.
  */
@@ -221,6 +224,9 @@ int inicialitza_joc(void)
 		}
 		offset += BLKSIZE + 2 * BLKGAP;
 	}
+
+	minuts = 0;
+	segons = 0;
 
 	sprintf(strin, "Tecles: \'%c\'-> Esquerra, \'%c\'-> Dreta, RETURN-> sortir\n", TEC_DRETA, TEC_ESQUER);
 	win_escristr(strin);
@@ -391,7 +397,7 @@ int main(int n_args, char *ll_args[])
 	{
 		/* Passem els arguments com a cadenes de text */
 		execlp("./pilota1", "pilota1", s_id_mem, s_fil, s_col,
-			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_nblocs, s_c_pal, s_m_pal, (char *)NULL);
+			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_nblocs, s_c_pal, s_m_pal, (char *)"0", (char *)NULL);
 		exit(1);
 	}
 
@@ -399,6 +405,20 @@ int main(int n_args, char *ll_args[])
 	do
 	{
 		fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
+		comptador_retard += retard;
+		if (comptador_retard >= 1000) /* Ha passat 1 segon */
+		{
+			segons++;
+			if (segons == 60)
+			{
+				minuts++;
+				segons = 0;
+			}
+			comptador_retard = 0;
+		}
+		sprintf(strin, "Temps: %02d:%02d | Blocs: %d", minuts, segons, nblocs);
+		win_escristr(strin);
+
 		win_update();		/* Bolcar els canvis fets a la memòria a la pantalla física */
 		win_retard(retard); /* Pausar el procés el temps establert abans del següent frame */
 	} while (!fi1); /* Sortir si demanem sortir (!fi1) o acaba la partida (!fi2) */
@@ -411,6 +431,7 @@ int main(int n_args, char *ll_args[])
 
 	win_fi();
 
+	printf("Temps de joc -> %02d:%02d\n", minuts, segons);
 	/* 6. Alliberament obligatori de la memòria compartida creada a l'inici */
 	elim_mem(id_mem);
 
