@@ -3,6 +3,7 @@
 #include <string.h>
 #include "winsuport2.h"
 #include "memoria.h"
+#include <unistd.h>
 
 /* --- Definicions de constants --- */
 #define MAX_THREADS 10
@@ -25,6 +26,8 @@ int f_pil, c_pil;   /* posicio de la pilota, en valor enter (per pintar a pantal
 float pos_f, pos_c; /* posicio real de la pilota, en valor real (per a moviments suaus) */
 float vel_f, vel_c; /* velocitat de la pilota (components horitzontal i vertical) */
 
+int num_pilotes;
+
 int retard;
 
 int nblocs = 0; /* nombre de blocs restants per trencar */
@@ -44,7 +47,7 @@ char numero;
 /* * Donada una posició on la pilota ha xocat, comprova si és un bloc de lletres.
  * Si ho és, esborra tot el bloc de la pantalla i redueix el comptador de blocs.
  */
-void comprovar_bloc(int f, int c)
+char comprovar_bloc(int f, int c)
 {
     int col;
     char quin = win_quincar(f, c);
@@ -66,7 +69,9 @@ void comprovar_bloc(int f, int c)
             col--;
         }
         nblocs--; /* Decrementem el total de blocs pendents */
+        return quin;
     }
+    return ' ';
 }
 
 /* * Calcula l'efecte de la pilota depenent d'on impacti sobre la paleta.
@@ -113,7 +118,37 @@ int mou_pilota(void)
             rv = win_quincar(f_h, c_pil);
             if (rv != ' ')
             {
-                comprovar_bloc(f_h, c_pil);
+                if (comprovar_bloc(f_h, c_pil) == 'B')
+                {
+                    char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
+                    char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
+                    char s_nblocs[10], s_c_pal[10], s_m_pal[10], s_numero[10];
+
+                    float nova_vel_f = -vel_f;
+                    float nova_vel_c = -vel_c;
+
+                    sprintf(s_id_mem, "%d", id_mem);
+                    sprintf(s_fil, "%d", n_fil);
+                    sprintf(s_col, "%d", n_col);
+                    sprintf(s_retard, "%d", retard);
+                    sprintf(s_pos_f, "%.2f", pos_f);
+                    sprintf(s_pos_c, "%.2f", pos_c);
+                    sprintf(s_vel_f, "%.2f", nova_vel_f);
+                    sprintf(s_vel_c, "%.2f", nova_vel_c);
+                    sprintf(s_nblocs, "%d", nblocs);
+                    sprintf(s_c_pal, "%d", c_pal);
+                    sprintf(s_m_pal, "%d", m_pal);
+                    sprintf(s_numero, "%d", num_pilotes);
+
+                    if (fork() == 0)
+                    {
+                        /* Passem els arguments com a cadenes de text */
+                        execlp("./pilota1", "pilota1", s_id_mem, s_fil, s_col,
+                               s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_nblocs, s_c_pal, s_m_pal, s_numero, (char *)NULL);
+                        exit(1);
+                    }
+                }
+
                 if (rv == '0')
                     vel_c = control_impacte2(c_pil, vel_c);
                 vel_f = -vel_f;
@@ -173,8 +208,8 @@ int mou_pilota(void)
 
 int main(int n_args, char *ll_args[])
 {
-    // if (n_args < 13)
-    //   exit(1);
+    if (n_args < 13)
+        exit(1);
 
     id_mem = atoi(ll_args[1]);
     n_fil = atoi(ll_args[2]);
@@ -188,6 +223,7 @@ int main(int n_args, char *ll_args[])
     c_pal = atoi(ll_args[10]);
     m_pal = atoi(ll_args[11]);
     numero = (char)ll_args[12][0];
+    num_pilotes = atoi(ll_args[12]) + 1;
 
     p_mem = map_mem(id_mem);
     win_set(p_mem, n_fil, n_col);
