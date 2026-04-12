@@ -12,6 +12,7 @@
 #include <string.h>
 #include "winsuport2.h"
 #include "memoria.h"
+#include <unistd.h>
 
 /* --- Definicions de constants --- */
 #define MAX_THREADS 10
@@ -189,7 +190,6 @@ int inicialitza_joc(void)
 		pos_c = n_col - 1;
 	f_pil = pos_f;
 	c_pil = pos_c;
-	win_escricar(f_pil, c_pil, '1', INVERS);
 
 	/* Generació dels blocs a destruir (files 3, 4 i 5) */
 	nb = 0;
@@ -328,7 +328,7 @@ int mou_paleta(void)
 /* --- Programa Principal --- */
 int main(int n_args, char *ll_args[])
 {
-	int i, fi1, fi2;
+	int i, fi1 /*, fi2*/;
 	FILE *fit_conf;
 
 	/* 1. Comprovació d'arguments d'entrada */
@@ -367,12 +367,31 @@ int main(int n_args, char *ll_args[])
 	getchar();
 
 	/* 3. Inicialització de la memòria compartida i del taulell gràfic */
-	if (inicialitza_joc() != 0)
+	if (inicialitza_joc() != (pid_t)0)
 		exit(4);
+
+	char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
+	char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
+	char s_nblocs[10], s_c_pal[10], s_m_pal[10];
+
+	/* Conversió de dades a string */
+	sprintf(s_id_mem, "%d", id_mem);
+	sprintf(s_fil, "%d", n_fil);
+	sprintf(s_col, "%d", n_col);
+	sprintf(s_retard, "%d", retard);
+	sprintf(s_pos_f, "%.2f", pos_f);
+	sprintf(s_pos_c, "%.2f", pos_c);
+	sprintf(s_vel_f, "%.2f", vel_f);
+	sprintf(s_vel_c, "%.2f", vel_c);
+	sprintf(s_nblocs, "%d", nblocs);
+	sprintf(s_c_pal, "%d", c_pal);
+	sprintf(s_m_pal, "%d", m_pal);
 
 	if (fork() == 0)
 	{
-		execlp("./pilota1", "pilota1", f_pil, c_pil, id_mem, n_fil, n_col, vel_f, vel_c, retard, nblocs, c_pal, m_pal, (char *)NULL);
+		/* Passem els arguments com a cadenes de text */
+		execlp("./pilota1", "pilota1", s_id_mem, s_fil, s_col,
+			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_nblocs, s_c_pal, s_m_pal, (char *)NULL);
 		exit(1);
 	}
 

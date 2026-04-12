@@ -8,6 +8,10 @@ LIBS = -lcurses
 # Objectius principals (es compilen tots si fem 'make' a seques)
 all: mur0 mur1 pilota1
 
+fase1: mur1 pilota1
+
+fase2: mur2 pilota2
+
 # Rutines compartides (llibreria gràfica i IPC)
 winsuport2.o: winsuport2.c winsuport2.h
 	$(CC) $(CFLAGS) -c winsuport2.c -o winsuport2.o

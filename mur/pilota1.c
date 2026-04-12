@@ -25,6 +25,8 @@ int f_pil, c_pil;   /* posicio de la pilota, en valor enter (per pintar a pantal
 float pos_f, pos_c; /* posicio real de la pilota, en valor real (per a moviments suaus) */
 float vel_f, vel_c; /* velocitat de la pilota (components horitzontal i vertical) */
 
+int retard;
+
 int nblocs = 0; /* nombre de blocs restants per trencar */
 
 /* Variables globals per a la memòria compartida (IPC) */
@@ -169,27 +171,29 @@ int mou_pilota(void)
 
 int main(int n_args, char *ll_args[])
 {
-    // if (n_args != 13)
-    //   exit(1);
+    if (n_args < 12)
+        exit(1);
 
-    f_pil = atoi(ll_args[2]);
-    c_pil = atoi(ll_args[3]);
-    id_mem = atoi(ll_args[4]);
-    n_fil = atoi(ll_args[5]);
-    n_col = atoi(ll_args[6]);
-    vel_f = atoi(ll_args[7]);
-    vel_c = atoi(ll_args[8]);
-    int retard = atoi(ll_args[9]);
-    nblocs = atoi(ll_args[10]);
-    c_pal = atoi(ll_args[11]);
-    m_pal = atoi(ll_args[12]);
+    id_mem = atoi(ll_args[1]);
+    n_fil = atoi(ll_args[2]);
+    n_col = atoi(ll_args[3]);
+    pos_f = atof(ll_args[4]);
+    pos_c = atof(ll_args[5]);
+    vel_f = atof(ll_args[6]);
+    vel_c = atof(ll_args[7]);
+    retard = atoi(ll_args[8]);
+    nblocs = atoi(ll_args[9]);
+    c_pal = atoi(ll_args[10]);
+    m_pal = atoi(ll_args[11]);
 
     p_mem = map_mem(id_mem);
     win_set(p_mem, n_fil, n_col);
 
     do
+    {
         fi2 = mou_pilota();
-    while (!fi2);
+        win_retard(retard);
+    } while (!fi2);
 
     return 0;
 }
