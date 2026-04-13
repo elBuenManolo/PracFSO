@@ -1,4 +1,4 @@
 #/bin/bash
 
-ipcs
-ipcrm
+#ipcs
+ipcrm -a
