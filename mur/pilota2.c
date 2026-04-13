@@ -4,6 +4,7 @@
 #include "winsuport2.h"
 #include "memoria.h"
 #include <unistd.h>
+#include "semafor.h"
 
 /* --- Definicions de constants --- */
 #define MAX_THREADS 10

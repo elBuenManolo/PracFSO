@@ -11,6 +11,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include "winsuport2.h"
+#include "semafor.h"
 #include "memoria.h"
 #include <unistd.h>
 
