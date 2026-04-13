@@ -63,6 +63,7 @@ char *descripcio[] = {
 int n_fil, n_col;	  /* dimensions del camp de joc */
 int m_por;			  /* mida de la porteria (en caracters) */
 int nblocs = 0;		  /* nombre de blocs restants per trencar */
+int npilotes;		  /* nombre de pilotes */
 int retard;			  /* valor del retard de moviment, en mil.lisegons */
 char strin[LONGMISS]; /* variable per a generar missatges de text a la pantalla */
 
@@ -79,6 +80,7 @@ float vel_f, vel_c; /* velocitat de la pilota (components horitzontal i vertical
 /* Variables globals per a la memòria compartida (IPC) */
 int id_mem;	 /* identificador de la memòria compartida creada */
 void *p_mem; /* punter cap a la zona de memòria mapejada */
+int id_sem;
 
 int minuts, segons;
 int comptador_retard = 0;
@@ -252,34 +254,6 @@ void mostra_final(char *miss)
 	getchar();
 }
 
-/* * Donada una posició on la pilota ha xocat, comprova si és un bloc de lletres.
- * Si ho és, esborra tot el bloc de la pantalla i redueix el comptador de blocs.
- */
-void comprovar_bloc(int f, int c)
-{
-	int col;
-	char quin = win_quincar(f, c);
-
-	if (quin == BLKCHAR || quin == FRNTCHAR)
-	{
-		col = c;
-		/* Esborrar cap a la dreta fins trobar un espai buit */
-		while (win_quincar(f, col) != ' ')
-		{
-			win_escricar(f, col, ' ', NO_INV);
-			col++;
-		}
-		col = c - 1;
-		/* Esborrar cap a l'esquerra fins trobar un espai buit */
-		while (win_quincar(f, col) != ' ')
-		{
-			win_escricar(f, col, ' ', NO_INV);
-			col--;
-		}
-		nblocs--; /* Decrementem el total de blocs pendents */
-	}
-}
-
 /* * Calcula l'efecte de la pilota depenent d'on impacti sobre la paleta.
  * Si pica a les vores, el rebot és més inclinat.
  */
@@ -309,6 +283,7 @@ int mou_paleta(void)
 
 	result = 0;
 	tecla = win_gettec();
+	waitS(id_sem);
 	if (tecla != 0)
 	{
 		if ((tecla == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
@@ -329,6 +304,7 @@ int mou_paleta(void)
 			result = 1; /* L'usuari vol sortir */
 		dirPaleta = tecla;
 	}
+	signalS(id_sem);
 	return (result);
 }
 
@@ -377,9 +353,11 @@ int main(int n_args, char *ll_args[])
 	if (inicialitza_joc() != (pid_t)0)
 		exit(4);
 
+	id_sem = ini_sem(1);
+
 	char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
 	char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
-	char s_nblocs[10], s_c_pal[10], s_m_pal[10];
+	char s_nblocs[10], s_c_pal[10], s_m_pal[10], s_id_sem[10];
 
 	/* Conversió de dades a string */
 	sprintf(s_id_mem, "%d", id_mem);
@@ -393,12 +371,13 @@ int main(int n_args, char *ll_args[])
 	sprintf(s_nblocs, "%d", nblocs);
 	sprintf(s_c_pal, "%d", c_pal);
 	sprintf(s_m_pal, "%d", m_pal);
+	sprintf(s_id_sem, "%d", id_sem);
 
 	if (fork() == 0)
 	{
 		/* Passem els arguments com a cadenes de text */
-		execlp("./pilota1", "pilota1", s_id_mem, s_fil, s_col,
-			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_nblocs, s_c_pal, s_m_pal, (char *)"0", (char *)NULL);
+		execlp("./pilota2", "pilota2", s_id_mem, s_fil, s_col,
+			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_nblocs, s_c_pal, s_m_pal, (char *)"0", s_id_sem, (char *)NULL);
 		exit(1);
 	}
 
@@ -420,7 +399,10 @@ int main(int n_args, char *ll_args[])
 		sprintf(strin, "Temps: %02d:%02d | Blocs: %d", minuts, segons, nblocs);
 		win_escristr(strin);
 
-		win_update();		/* Bolcar els canvis fets a la memòria a la pantalla física */
+		waitS(id_sem);
+		win_update(); /* Bolcar els canvis fets a la memòria a la pantalla física */
+		signalS(id_sem);
+
 		win_retard(retard); /* Pausar el procés el temps establert abans del següent frame */
 	} while (!fi1); /* Sortir si demanem sortir (!fi1) o acaba la partida (!fi2) */
 
@@ -435,6 +417,8 @@ int main(int n_args, char *ll_args[])
 	printf("Temps de joc -> %02d:%02d\n", minuts, segons);
 	/* 6. Alliberament obligatori de la memòria compartida creada a l'inici */
 	elim_mem(id_mem);
+	elim_sem(id_sem);
+	// elim_mis();
 
 	return (0);
 }
