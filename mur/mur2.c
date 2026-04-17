@@ -13,6 +13,7 @@
 #include "winsuport2.h"
 #include "semafor.h"
 #include "memoria.h"
+#include "missatge.h"
 #include <unistd.h>
 
 /* --- Definicions de constants --- */
@@ -79,9 +80,12 @@ float vel_f, vel_c; /* velocitat de la pilota (components horitzontal i vertical
 /* Variables globals per a la memòria compartida (IPC) */
 int id_mem; /* identificador de la memòria compartida creada */
 int id_sem;
+int id_mis;
 
 int minuts, segons;
 int comptador_retard = 0;
+
+char missatge_rebut[20];
 
 typedef struct
 {
@@ -364,10 +368,11 @@ int main(int n_args, char *ll_args[])
 		exit(4);
 
 	id_sem = ini_sem(1);
+	id_mis = ini_mis();
 
 	char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
 	char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
-	char s_c_pal[10], s_m_pal[10], s_id_sem[10];
+	char s_c_pal[10], s_m_pal[10], s_id_sem[10], s_id_mis[10];
 
 	/* Conversió de dades a string */
 	sprintf(s_id_mem, "%d", id_mem);
@@ -381,13 +386,14 @@ int main(int n_args, char *ll_args[])
 	sprintf(s_c_pal, "%d", c_pal);
 	sprintf(s_m_pal, "%d", m_pal);
 	sprintf(s_id_sem, "%d", id_sem);
+	sprintf(s_id_mis, "%d", id_mis);
 
 	if (fork() == 0)
 	{
 
 		/* Passem els arguments com a cadenes de text */
 		execlp("./pilota2", "pilota2", s_id_mem, s_fil, s_col,
-			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, (char *)"1", s_id_sem, (char *)NULL);
+			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, (char *)"1", s_id_sem, s_id_mis, (char *)NULL);
 		exit(1);
 	}
 
@@ -395,6 +401,10 @@ int main(int n_args, char *ll_args[])
 	do
 	{
 		fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
+		//receiveM(id_mis, missatge_rebut);
+		//if (missatge_rebut[0] == 'P'){
+		//	comp->npilotes++;
+		//} TODO
 		comptador_retard += retard;
 		if (comptador_retard >= 1000) /* Ha passat 1 segon */
 		{
@@ -426,7 +436,7 @@ int main(int n_args, char *ll_args[])
 	/* 6. Alliberament obligatori de la memòria compartida creada a l'inici */
 	elim_mem(id_mem);
 	elim_sem(id_sem);
-	// elim_mis();
+	elim_mis(id_mis);
 
 	return (0);
 }

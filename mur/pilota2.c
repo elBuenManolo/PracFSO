@@ -5,6 +5,7 @@
 #include "memoria.h"
 #include <unistd.h>
 #include "semafor.h"
+#include "missatge.h"
 
 /* --- Definicions de constants --- */
 #define MAX_THREADS 10
@@ -38,6 +39,9 @@ int fi2;
 int c_pal, m_pal;
 
 int id_sem;
+int id_mis;
+
+char missatge_enviat[2];
 
 int n_fil;
 int n_col;
@@ -135,7 +139,7 @@ int mou_pilota(void)
             {
                 if (comprovar_bloc(f_h, c_pil) == BLKCHAR)
                 {
-                    char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
+                    /*char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
                     char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
                     char s_c_pal[10], s_m_pal[10], s_numero[10], s_id_sem[10];
 
@@ -154,14 +158,17 @@ int mou_pilota(void)
                     sprintf(s_m_pal, "%d", m_pal);
                     sprintf(s_numero, "%d", comp->npilotes);
                     sprintf(s_id_sem, "%d", id_sem);
-
-                    if (fork() == 0)
-                    {
+                    */
+                    //if (fork() == 0)
+                    //{
                         /* Passem els arguments com a cadenes de text */
-                        execlp("./pilota2", "pilota2", s_id_mem, s_fil, s_col,
-                               s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, s_numero, s_id_sem, (char *)NULL);
-                        exit(1);
-                    }
+                    //    execlp("./pilota2", "pilota2", s_id_mem, s_fil, s_col,
+                    //           s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, s_numero, s_id_sem, (char *)NULL);
+                    //    exit(1);
+                    //}
+                    missatge_enviat[0] = 'P';
+                    missatge_enviat[1] = 'B';
+                    sendM(id_mis, missatge_enviat, sizeof(missatge_enviat));
                 }
 
                 if (rv == '0')
@@ -232,7 +239,7 @@ int mou_pilota(void)
 
 int main(int n_args, char *ll_args[])
 {
-    if (n_args < 13)
+    if (n_args < 14)
         exit(1);
 
     id_mem = atoi(ll_args[1]);
@@ -247,6 +254,7 @@ int main(int n_args, char *ll_args[])
     m_pal = atoi(ll_args[10]);
     numero = (char)ll_args[11][0];
     id_sem = atoi(ll_args[12]);
+    id_mis = atoi(ll_args[13]);
 
     comp = map_mem(id_mem);
     win_set(&(comp->tauler), n_fil, n_col);
