@@ -411,7 +411,7 @@ void * mou_paleta(void * arg){
 						signalS(id_sem);
 					}
 					pthread_mutex_lock(&mutex);
-					paletes[pal].f_pal += possible; //mutex
+					paletes[pal].f_pal += possible; 
 					pthread_mutex_unlock(&mutex);
 				}
 			}
@@ -425,7 +425,7 @@ void * mou_paleta(void * arg){
 					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal, ' ', NO_INV);
 					signalS(id_sem);
 					pthread_mutex_lock(&mutex);
-					paletes[pal].c_pal++; //mutex
+					paletes[pal].c_pal++; 
 					pthread_mutex_unlock(&mutex);
 					waitS(id_sem);
 					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + paletes[pal].m_pal - 1, (char)(num_paleta + '0'), INVERS);
@@ -434,7 +434,7 @@ void * mou_paleta(void * arg){
 				else
 				{
 					pthread_mutex_lock(&mutex);
-					paletes[pal].dirPaleta = -1; //mutex // Canvia de direcció
+					paletes[pal].dirPaleta = -1; // Canvia de direcció
 					pthread_mutex_unlock(&mutex);
 				}
 			}
@@ -447,7 +447,7 @@ void * mou_paleta(void * arg){
 					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + paletes[pal].m_pal - 1, ' ', NO_INV);
 					signalS(id_sem);
 					pthread_mutex_lock(&mutex);
-					paletes[pal].c_pal--; //mutex
+					paletes[pal].c_pal--; 
 					pthread_mutex_unlock(&mutex);
 					waitS(id_sem);
 					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal, (char)(num_paleta + '0'), INVERS);
@@ -456,12 +456,12 @@ void * mou_paleta(void * arg){
 				else
 				{
 					pthread_mutex_lock(&mutex);
-					paletes[pal].dirPaleta = 1; //mutex // Canvia de direcció
+					paletes[pal].dirPaleta = 1;  // Canvia de direcció
 					pthread_mutex_unlock(&mutex);
 				}
 			}
 			win_retard(retard);
-		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0); //mutex
+		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0); 
 
 	}
 	return NULL;
