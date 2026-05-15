@@ -239,6 +239,13 @@ int inicialitza_joc(void)
 	for (i = 0; i < m_pal; i++)
 		win_escricar(f_pal, c_pal + i, '0', INVERS);
 
+	for (i = 0; i < npaletes + 1; i++){				// npaletes + 1 ja que npaletes compta també amb la paleta de l'usuari que és la '0'
+		for (int j = 0; j < paletes[i].m_pal; j++){
+			win_escricar(paletes[i].f_pal, paletes[i].c_pal + j, (char)((i + 1) + '0'), INVERS);
+		}
+
+	}
+
 	/* Ubicar i dibuixar la pilota a la posició inicial */
 	if (pos_f > n_fil - 1)
 		pos_f = n_fil - 1;
@@ -395,7 +402,7 @@ void * mou_paleta(void * arg){
 	else{
 
 		do{
-
+			
 
 
 			win_retard(retard);
