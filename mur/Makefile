@@ -6,11 +6,13 @@ CFLAGS = -Wall -g
 LIBS = -lcurses
 
 # Objectius principals (es compilen tots si fem 'make' a seques)
-all: mur0 mur1 pilota1
+all: mur0 mur1 pilota1 mur2 pilota2 mur3 pilota3
 
 fase1: mur1 pilota1
 
 fase2: mur2 pilota2
+
+fase3: mur3 pilota3
 
 # Rutines compartides (llibreria gràfica i IPC)
 winsuport2.o: winsuport2.c winsuport2.h
@@ -62,10 +64,10 @@ pilota2: pilota2.o winsuport2.o memoria.o semafor.o missatge.o
 # --- FASE 3 ---
 
 mur3.o: mur3.c winsuport2.h memoria.h semafor.h missatge.h
-	$(CC) $(CFLAGS) -c mur3.c -o mur3.o
+	$(CC) $(CFLAGS) -c mur3.c -o mur3.o -lpthread
 
 mur3: mur3.o winsuport2.o memoria.o semafor.o missatge.o
-	$(CC) $(CFLAGS) mur3.o winsuport2.o memoria.o semafor.o missatge.o -o mur3 $(LIBS)
+	$(CC) $(CFLAGS) mur3.o winsuport2.o memoria.o semafor.o missatge.o -o mur3 $(LIBS) -lpthread
 
 pilota3.o: pilota3.c winsuport2.h memoria.h semafor.h missatge.h
 	$(CC) $(CFLAGS) -c pilota3.c -o pilota3.o

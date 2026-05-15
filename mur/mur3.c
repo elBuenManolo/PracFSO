@@ -13,6 +13,7 @@
 #include "missatge.h"
 #include <unistd.h>
 #include <sys/wait.h>
+#include <pthread.h>
 
 /* --- Definicions de constants --- */
 #define MAX_THREADS 10
@@ -69,6 +70,7 @@ char strin[LONGMISS]; /* variable per a generar missatges de text a la pantalla 
 int f_pal, c_pal;  /* posicio del primer caracter de la paleta (fila, columna) */
 int m_pal;		   /* mida de la paleta (en caracters) */
 int dirPaleta = 0; /* direcció de moviment de la paleta */
+int npaletes;
 
 /* Variables de la pilota */
 int f_pil, c_pil;	/* posicio de la pilota, en valor enter (per pintar a pantalla) */
@@ -100,7 +102,15 @@ typedef struct
 	int fi1;
 } dades_t;
 
+typedef struct
+{
+	int f_pal, c_pal;
+	int m_pal;
+	int dirPaleta;
+} paleta_t;
+
 dades_t *comp;
+paleta_t paletes[MAX_THREADS];
 
 /* * Llegeix els paràmetres del joc des d'un fitxer de text.
  * Retorna 0 si tot va bé, o un codi d'error (1-5) si algun paràmetre és incorrecte.
@@ -112,6 +122,21 @@ int carrega_configuracio(FILE *fit)
 	fscanf(fit, "%d %d %d\n", &n_fil, &n_col, &m_por);
 	fscanf(fit, "%d %d\n", &c_pal, &m_pal);
 	fscanf(fit, "%f %f %f %f\n", &pos_f, &pos_c, &vel_f, &vel_c);
+	
+	fscanf(fit, "P %d\n", &npaletes);			// La primera fila amb P és el nombre de paletes
+	
+	if (n_paletes != 1){
+		for (int i = 0; i < npaletes; i++)
+		{
+			fscanf(fit, "%d %d %d %d\n", &paletes[i].f_pal, &paletes[i].c_pal, &paletes[i].m_pal, &paletes[i].dirPaleta);
+			
+			if (paletes[i].c_pal != 0 && paletes[i].m_pal != 0)
+			{
+				if ((paletes[i].m_pal < 1) || (paletes[i].m_pal > n_col - 3) || (paletes[i].c_pal < 1) || (paletes[i].c_pal + paletes[i].m_pal > n_col - 1))
+					ret = 5;
+			}
+		}
+	}
 
 	/* Validació de les dimensions i posicions per evitar errors gràfics */
 	if ((n_fil != 0) || (n_col != 0))
@@ -126,11 +151,9 @@ int carrega_configuracio(FILE *fit)
 	if ((vel_f < -1.0) || (vel_f > 1.0) || (vel_c < -1.0) || (vel_c > 1.0))
 		ret = 4;
 
-	if (c_pal != 0 && m_pal != 0)
-	{
-		if ((m_pal < 1) || (m_pal > n_col - 3) || (c_pal < 1) || (c_pal + m_pal > n_col - 1))
-			ret = 5;
-	}
+
+	if (npaletes > MAX_THREADS || npaletes < 1)
+		ret = 6;
 
 	if (ret != 0)
 	{
@@ -151,6 +174,9 @@ int carrega_configuracio(FILE *fit)
 			break;
 		case 5:
 			fprintf(stderr, "\tposicio o mida de la paleta incorrectes\n");
+			break;
+		case 6:
+			fprintf(stderr, "\tnumero de paletes incorrecte\n");
 			break;
 		}
 	}
@@ -328,6 +354,55 @@ int mou_paleta(void)
 	return (result);
 }
 
+void * mou_paleta(void * arg){
+
+	int num_paleta = (int) arg;
+	// 0 = Paleta de l'usuari
+	if (num_paleta == 0){
+
+		int tecla, result;
+		result = 0;
+		do{
+			tecla = win_gettec();
+			if (tecla != 0)
+			{
+				waitS(id_sem);
+				if ((tecla == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
+				{
+					/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
+					win_escricar(f_pal, c_pal, ' ', NO_INV);
+					c_pal++;
+					win_escricar(f_pal, c_pal + m_pal - 1, '0', INVERS);
+				}
+				if ((tecla == TEC_ESQUER) && (c_pal > 1))
+				{
+					/* Esborrar l'extrem dret i pintar el nou extrem esquerre */
+					win_escricar(f_pal, c_pal + m_pal - 1, ' ', NO_INV);
+					c_pal--;
+					win_escricar(f_pal, c_pal, '0', INVERS);
+				}
+				if (tecla == TEC_RETURN)
+					result = 1; /* L'usuari vol sortir */
+				dirPaleta = tecla;
+				signalS(id_sem);
+			}
+
+		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
+
+	}
+	else{
+
+		do{
+
+
+
+
+		}while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
+
+	}
+
+}
+
 void crear_pilota(MISSATGE *missatge) {
 	if (fork() == 0){
 		char s_npilotes[8];
@@ -431,11 +506,20 @@ int main(int n_args, char *ll_args[])
 		exit(1);
 	}
 	npilotes = 2; // comptador per a escriure
+
+	// 0 = Paleta de l'usuari
+	pthread_create(&tid[0], NULL, mou_paleta, (void *)0);
+
+	// Paletes controlades per la IA
+	for (int i = 1; i < npaletes; i++){
+		pthread_create(&tid[i], NULL, mou_paleta, (void *)i);
+
+	}
 	/* 4. Bucle principal d'execució del joc */
 	do
 	{
 
-		comp->fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
+		//comp->fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
 
 		MISSATGE missatge_rebut; 
 
