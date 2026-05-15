@@ -206,12 +206,12 @@ int mou_pilota(void)
             if (rd != ' ')
             {
                 if (comprovar_bloc(f_h, c_h) == BLKCHAR){
-                    vel_f = -vel_f;
-                    vel_c = -vel_c;
-                    f_h = pos_f + vel_f;
-                    c_h = pos_c + vel_c;
                     enviar_missatge(vel_f, vel_c);      // Potser no funciona TODO
                 }
+                vel_f = -vel_f;
+                vel_c = -vel_c;
+                f_h = pos_f + vel_f;
+                c_h = pos_c + vel_c;
             }
         }
 
@@ -274,8 +274,5 @@ int main(int n_args, char *ll_args[])
         fi2 = mou_pilota();
         win_retard(retard);
     } while (!fi2 && comp->npilotes > 0 && !comp->fi1);
-    waitS(id_sem);
-    comp->npilotes--;
-    signalS(id_sem);
     return 0;
 }
