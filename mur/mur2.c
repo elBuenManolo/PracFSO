@@ -306,9 +306,9 @@ int mou_paleta(void)
 
 	result = 0;
 	tecla = win_gettec();
-	waitS(id_sem);
 	if (tecla != 0)
 	{
+		waitS(id_sem);
 		if ((tecla == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
 		{
 			/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
@@ -326,8 +326,8 @@ int mou_paleta(void)
 		if (tecla == TEC_RETURN)
 			result = 1; /* L'usuari vol sortir */
 		dirPaleta = tecla;
+		signalS(id_sem);
 	}
-	signalS(id_sem);
 	return (result);
 }
 

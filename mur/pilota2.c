@@ -75,11 +75,10 @@ char comprovar_bloc(int f, int c)
 
     waitS(id_sem);
     char quin = win_quincar(f, c);
-    signalS(id_sem);
+
     if (quin == BLKCHAR || quin == FRNTCHAR)
     {
         col = c;
-        waitS(id_sem);
         /* Esborrar cap a la dreta fins trobar un espai buit */
         while (win_quincar(f, col) != ' ')
         {
@@ -97,6 +96,7 @@ char comprovar_bloc(int f, int c)
         signalS(id_sem);
         return quin;
     }
+    signalS(id_sem);
     return ' ';
 }
 
@@ -206,7 +206,7 @@ int mou_pilota(void)
             if (rd != ' ')
             {
                 if (comprovar_bloc(f_h, c_h) == BLKCHAR){
-                    enviar_missatge(vel_f, vel_c);      // Potser no funciona TODO
+                    enviar_missatge(vel_f, vel_c);
                 }
                 vel_f = -vel_f;
                 vel_c = -vel_c;
@@ -215,8 +215,8 @@ int mou_pilota(void)
             }
         }
 
-        waitS(id_sem);
         /* Si l'espai està lliure, moure la pilota i redibuixar */
+        waitS(id_sem);
         if (win_quincar(f_h, c_h) == ' ')
         {
             win_escricar(f_pil, c_pil, ' ', NO_INV);
@@ -226,7 +226,9 @@ int mou_pilota(void)
             c_pil = c_h;
             /* Si estem dins del tauler, la pintem. Si passem la línia, s'ha colat */
             if (f_pil != n_fil - 1)
+            {
                 win_escricar(f_pil, c_pil, numero, INVERS);
+            }
             else
             {
                 fora = 1;
