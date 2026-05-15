@@ -14,6 +14,7 @@
 #include "semafor.h"
 #include "memoria.h"
 #include <unistd.h>
+#include <sys/wait.h>
 
 /* --- Definicions de constants --- */
 #define MAX_THREADS 10
@@ -83,11 +84,14 @@ int id_sem;
 int minuts, segons;
 int comptador_retard = 0;
 
+pid_t pid_pilotes[MAXBALLS];
+
 typedef struct
 {
 	int nblocs;
 	int npilotes;
 	char tauler;
+	int fi1;
 } dades_t;
 
 dades_t *comp;
@@ -318,10 +322,15 @@ int mou_paleta(void)
 	return (result);
 }
 
+bool crear_pilota() {
+		
+	return true;
+}
+
 /* --- Programa Principal --- */
 int main(int n_args, char *ll_args[])
 {
-	int i, fi1 /*, fi2*/;
+	int i /*, fi2*/;
 	FILE *fit_conf;
 
 	/* 1. Comprovació d'arguments d'entrada */
@@ -394,7 +403,7 @@ int main(int n_args, char *ll_args[])
 	/* 4. Bucle principal d'execució del joc */
 	do
 	{
-		fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
+		comp->fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
 		comptador_retard += retard;
 		if (comptador_retard >= 1000) /* Ha passat 1 segon */
 		{
@@ -412,7 +421,7 @@ int main(int n_args, char *ll_args[])
 		win_update(); /* Bolcar els canvis fets a la memòria a la pantalla física */
 		signalS(id_sem);
 		win_retard(retard); /* Pausar el procés el temps establert abans del següent frame */
-	} while (!fi1 && comp->nblocs > 0 && comp->npilotes > 0); /* Sortir si demanem sortir (!fi1) o acaba la partida (!fi2) */
+	} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0); /* Sortir si demanem sortir (!fi1) o acaba la partida (!fi2) */
 
 	/* 5. Comprovació de final de joc i missatges de sortida */
 	if (comp->nblocs == 0)
@@ -421,6 +430,9 @@ int main(int n_args, char *ll_args[])
 		mostra_final("GAME OVER");
 
 	win_fi();
+
+	// Això anirà esperant fills fins que ja no en quedi cap
+	while (wait(NULL) > 0);
 
 	printf("Temps de joc -> %02d:%02d\n", minuts, segons);
 	/* 6. Alliberament obligatori de la memòria compartida creada a l'inici */

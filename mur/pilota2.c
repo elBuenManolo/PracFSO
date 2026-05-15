@@ -46,12 +46,22 @@ char numero;
 
 typedef struct
 {
+    long origen;
+    long desti;
+    int mida;
+    char missatge[LONGMISS];
+} MISSATGE;
+
+typedef struct
+{
     int nblocs;
     int npilotes;
     char tauler;
+    int fi1;
 } dades_t;
 
-dades_t *comp; /* punter cap a la zona de memòria mapejada */
+dades_t *comp;       /* punter cap a la zona de memòria mapejada */
+MISSATGE *msg;       /* Estructura a enviar per missatge*/
 
 /* * Donada una posició on la pilota ha xocat, comprova si és un bloc de lletres.
  * Si ho és, esborra tot el bloc de la pantalla i redueix el comptador de blocs.
@@ -152,7 +162,8 @@ int mou_pilota(void)
                     sprintf(s_vel_c, "%.2f", nova_vel_c);
                     sprintf(s_c_pal, "%d", c_pal);
                     sprintf(s_m_pal, "%d", m_pal);
-                    sprintf(s_numero, "%d", comp->npilotes);
+                    waitS(id_sem);
+                    sprintf(s_numero, "%d", atoi(comp->n_pilotes) + 1);
                     sprintf(s_id_sem, "%d", id_sem);
 
                     if (fork() == 0)
@@ -162,6 +173,7 @@ int mou_pilota(void)
                                s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, s_numero, s_id_sem, (char *)NULL);
                         exit(1);
                     }
+                    signalS(id_sem);
                 }
 
                 if (rv == '0')
@@ -178,6 +190,7 @@ int mou_pilota(void)
             signalS(id_sem);
             if (rh != ' ')
             {
+
                 comprovar_bloc(f_pil, c_h);
                 vel_c = -vel_c;
                 c_h = pos_c + vel_c;
@@ -256,7 +269,7 @@ int main(int n_args, char *ll_args[])
     {
         fi2 = mou_pilota();
         win_retard(retard);
-    } while (!fi2);
+    } while (!fi2 && comp->npilotes > 0 && !comp->fi1);
 
     return 0;
 }
