@@ -129,8 +129,8 @@ int carrega_configuracio(FILE *fit)
 	
 	fscanf(fit, "P %d\n", &npaletes);			// La primera fila amb P és el nombre de paletes
 	
-	if (npaletes != 1){
-		for (int i = 0; i < npaletes; i++)
+	if (npaletes > 1){
+		for (int i = 0; i < npaletes - 1; i++)
 		{
 			fscanf(fit, "%d %d %d %d\n", &paletes[i].f_pal, &paletes[i].c_pal, &paletes[i].m_pal, &paletes[i].dirPaleta);
 			
@@ -239,11 +239,10 @@ int inicialitza_joc(void)
 	for (i = 0; i < m_pal; i++)
 		win_escricar(f_pal, c_pal + i, '0', INVERS);
 
-	for (i = 0; i < npaletes + 1; i++){				// npaletes + 1 ja que npaletes compta també amb la paleta de l'usuari que és la '0'
+	for (i = 0; i < npaletes - 1; i++){
 		for (int j = 0; j < paletes[i].m_pal; j++){
-			win_escricar(paletes[i].f_pal, paletes[i].c_pal + j, (char)((i + 1) + 48), INVERS);
+			win_escricar(paletes[i].f_pal, paletes[i].c_pal + j, (char)((i + 1) + '0'), INVERS);
 		}
-
 	}
 
 	/* Ubicar i dibuixar la pilota a la posició inicial */
@@ -331,40 +330,6 @@ float control_impacte2(int c_pil, float velc0)
 	return vel_c;
 }
 
-/* * Captura les entrades del teclat de l'usuari i desplaça la paleta.
- * Retorna 1 si es prem la tecla RETURN per abandonar la partida.
- */
-//	int mou_paleta(void)
-//	{
-//		int tecla, result = 0;
-//
-//		tecla = win_gettec();
-//		if (tecla != 0)
-//		{
-//			waitS(id_sem);
-//			if ((tecla == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
-//			{
-//				/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
-//				win_escricar(f_pal, c_pal, ' ', NO_INV);
-//				c_pal++;
-//				win_escricar(f_pal, c_pal + m_pal - 1, '0', INVERS);
-//			}
-//			if ((tecla == TEC_ESQUER) && (c_pal > 1))
-//			{
-//				/* Esborrar l'extrem dret i pintar el nou extrem esquerre */
-//				win_escricar(f_pal, c_pal + m_pal - 1, ' ', NO_INV);
-//				c_pal--;
-//				win_escricar(f_pal, c_pal, '0', INVERS);
-//			}
-//			if (tecla == TEC_RETURN)
-//				result = 1; /* L'usuari vol sortir */
-//			
-//			dirPaleta = tecla;
-//			signalS(id_sem);
-//		}
-//		return (result);
-//	}
-
 void * mou_paleta(void * arg){
 
 	int num_paleta = (int)(long) arg;
@@ -374,36 +339,112 @@ void * mou_paleta(void * arg){
 		do{
 			if (tecla_global != 0)
 			{
-				waitS(id_sem);
+				
 				if ((tecla_global == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
 				{
 					/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
+					waitS(id_sem);
 					win_escricar(f_pal, c_pal, ' ', NO_INV);
+					signalS(id_sem);
 					c_pal++;
+					waitS(id_sem);
 					win_escricar(f_pal, c_pal + m_pal - 1, '0', INVERS);
+					signalS(id_sem);
 				}
 				if ((tecla_global == TEC_ESQUER) && (c_pal > 1))
 				{
 					/* Esborrar l'extrem dret i pintar el nou extrem esquerre */
+					waitS(id_sem);
 					win_escricar(f_pal, c_pal + m_pal - 1, ' ', NO_INV);
+					signalS(id_sem);
 					c_pal--;
+					waitS(id_sem);
 					win_escricar(f_pal, c_pal, '0', INVERS);
+					signalS(id_sem);
 				}
-				if (tecla_global == TEC_RETURN)
+				if (tecla_global == TEC_RETURN){
+					waitS(id_sem);
 					comp->fi1 = 1; /* L'usuari vol sortir */
+					signalS(id_sem);
+				}
 				dirPaleta = tecla_global;
-				signalS(id_sem);
-			
+				
 			}
 			win_retard(retard);
 		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
 
 	}
 	else{
-
+		bool posible = true;
+		int pal = num_paleta - 1;			// Com paletes[] està en base 0 i dins de paletes no està la paleta de l'usuari, restem 1 per accedir correctament
 		do{
-			
+			if (tecla_global == num_paleta){
 
+				waitS(id_sem);
+				for (int i = 0; i < paletes[pal].m_pal; i++){
+					if (win_quincar(paletes[pal].f_pal + 1, paletes[pal].c_pal + i) == ' '){
+						possible = false;
+						break;
+					}
+					if (win_quincar(paletes[pal].f_pal - 1, paletes[pal].c_pal + i) == ' '){
+						possible = false;
+						break;
+					}
+				}
+				signalS(id_sem);
+
+				if (possible){
+					for (int i = 0; i < paletes[pal].m_pal; i++){
+						waitS(id_sem);
+						win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + i, ' ', NO_INV);
+						signalS(id_sem);
+					}
+
+					for (int i = 0; i < paletes[pal].m_pal; i++){
+						waitS(id_sem);
+						win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + i, (char)(num_paleta + '0'), INVERS);
+						signalS(id_sem);
+					}
+				}
+				possible = true;
+			}
+
+			if (paletes[pal].dirPaleta == 1) // Dreta
+			{
+				if ((paletes[pal].c_pal + paletes[pal].m_pal) < n_col - 1)
+				{
+					/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
+					waitS(id_sem);
+					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal, ' ', NO_INV);
+					signalS(id_sem);
+					paletes[pal].c_pal++;
+					waitS(id_sem);
+					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + paletes[pal].m_pal - 1, (char)(num_paleta + '0'), INVERS);
+					signalS(id_sem);
+				}
+				else
+				{
+					paletes[pal].dirPaleta = -1; // Canvia de direcció
+				}
+			}
+			else if (paletes[pal].dirPaleta == -1) // Esquerra
+			{
+				if (paletes[pal].c_pal > 1)
+				{
+					/* Esborrar l'extrem dret i pintar el nou extrem esquerre */
+					waitS(id_sem);
+					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + paletes[pal].m_pal - 1, ' ', NO_INV);
+					signalS(id_sem);
+					paletes[pal].c_pal--;
+					waitS(id_sem);
+					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal, (char)(num_paleta + '0'), INVERS);
+					signalS(id_sem);
+				}
+				else
+				{
+					paletes[pal].dirPaleta = 1; // Canvia de direcció
+				}
+			}
 
 			win_retard(retard);
 		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
