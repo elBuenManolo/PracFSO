@@ -86,7 +86,14 @@ int id_mis;
 int minuts, segons;
 int comptador_retard = 0;
 
-char missatge_rebut[20];
+typedef struct
+{
+    long origen;
+    long desti;
+    char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
+    char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
+    char s_c_pal[10], s_m_pal[10], s_numero[10], s_id_sem[10], s_id_mis[10];
+} MISSATGE;
 
 typedef struct
 {
@@ -324,9 +331,25 @@ int mou_paleta(void)
 	return (result);
 }
 
-bool crear_pilota() {
-		
-	return true;
+void crear_pilota(MISSATGE *missatge) {
+	if (fork() == 0){
+		execlp("./pilota2", "pilota2",
+			missatge->s_id_mem,
+			missatge->s_fil,
+			missatge->s_col,
+			missatge->s_pos_f,
+			missatge->s_pos_c,
+			missatge->s_vel_f,
+			missatge->s_vel_c,
+			missatge->s_retard,
+			missatge->s_c_pal,
+			missatge->s_m_pal,
+			missatge->s_numero,
+			missatge->s_id_sem,
+			missatge->s_id_mis,
+			(char *)NULL);
+		exit(1); // Surto del fill, el pare no ha de continuar
+	}
 }
 
 /* --- Programa Principal --- */
@@ -410,13 +433,12 @@ int main(int n_args, char *ll_args[])
 
 		comp->fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
 
-		receiveM(id_mis, missatge_rebut);
-		if (missatge_rebut[0] == 'P'){
-			comp->npilotes++;
-			if (comp->npilotes < 3){
-				crear_pilota();
-			}
-		}
+		//MISSATGE missatge_rebut;
+
+		//receiveM(id_mis, &missatge_rebut);
+		//if (missatge_rebut.origen == 'F')					// Creem pilotes si rebem un missatge del fill (nova pilota)
+		//	crear_pilota(&missatge_rebut);
+
 		comptador_retard += retard;
 		if (comptador_retard >= 1000) /* Ha passat 1 segon */
 		{
@@ -430,9 +452,9 @@ int main(int n_args, char *ll_args[])
 		}
 		sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d", minuts, segons, comp->nblocs, comp->npilotes);
 		win_escristr(strin);
-		waitS(id_sem);
+		//waitS(id_sem);
 		win_update(); /* Bolcar els canvis fets a la memòria a la pantalla física */
-		signalS(id_sem);
+		//signalS(id_sem);
 		win_retard(retard); /* Pausar el procés el temps establert abans del següent frame */
 	} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0); /* Sortir si demanem sortir (!fi1) o acaba la partida (!fi2) */
 

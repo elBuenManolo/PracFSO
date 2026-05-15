@@ -41,8 +41,6 @@ int c_pal, m_pal;
 int id_sem;
 int id_mis;
 
-char missatge_enviat[2];
-
 int n_fil;
 int n_col;
 
@@ -50,10 +48,11 @@ char numero;
 
 typedef struct
 {
-    long origen;
-    long desti;
-    int mida;
-    char missatge[LONGMISS];
+    char origen;
+    char desti;
+    char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
+    char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
+    char s_c_pal[10], s_m_pal[10], s_numero[10], s_id_sem[10], s_id_mis[10];
 } MISSATGE;
 
 typedef struct
@@ -65,7 +64,7 @@ typedef struct
 } dades_t;
 
 dades_t *comp;       /* punter cap a la zona de memòria mapejada */
-MISSATGE *msg;       /* Estructura a enviar per missatge*/
+MISSATGE missatge;       /* Estructura a enviar per missatge*/
 
 /* * Donada una posició on la pilota ha xocat, comprova si és un bloc de lletres.
  * Si ho és, esborra tot el bloc de la pantalla i redueix el comptador de blocs.
@@ -99,6 +98,32 @@ char comprovar_bloc(int f, int c)
         return quin;
     }
     return ' ';
+}
+
+void enviar_missatge(float nova_vel_f, float nova_vel_c)
+{
+    sprintf(missatge.s_id_mem, "%d", id_mem);
+    sprintf(missatge.s_fil, "%d", n_fil);
+    sprintf(missatge.s_col, "%d", n_col);
+    sprintf(missatge.s_retard, "%d", retard);
+    sprintf(missatge.s_pos_f, "%.2f", pos_f);
+    sprintf(missatge.s_pos_c, "%.2f", pos_c);
+    sprintf(missatge.s_vel_f, "%.2f", nova_vel_f);
+    sprintf(missatge.s_vel_c, "%.2f", nova_vel_c);
+    sprintf(missatge.s_c_pal, "%d", c_pal);
+    sprintf(missatge.s_m_pal, "%d", m_pal);
+    waitS(id_sem);
+    comp->npilotes++;
+    sprintf(missatge.s_numero, "%d", comp->npilotes);
+    signalS(id_sem);
+    sprintf(missatge.s_id_sem, "%d", id_sem);
+    sprintf(missatge.s_id_mis, "%d", id_mis);
+    
+
+    missatge.origen = 'F'; // F = Fill
+    missatge.desti = 'P'; // P = Pare
+
+    sendM(id_mis, &missatge, sizeof(missatge));
 }
 
 /* * Calcula l'efecte de la pilota depenent d'on impacti sobre la paleta.
@@ -149,39 +174,11 @@ int mou_pilota(void)
             {
                 if (comprovar_bloc(f_h, c_pil) == BLKCHAR)
                 {
-                    /*char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
-                    char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
-                    char s_c_pal[10], s_m_pal[10], s_numero[10], s_id_sem[10];
 
                     float nova_vel_f = -vel_f;
                     float nova_vel_c = -vel_c;
-
-                    sprintf(s_id_mem, "%d", id_mem);
-                    sprintf(s_fil, "%d", n_fil);
-                    sprintf(s_col, "%d", n_col);
-                    sprintf(s_retard, "%d", retard);
-                    sprintf(s_pos_f, "%.2f", pos_f);
-                    sprintf(s_pos_c, "%.2f", pos_c);
-                    sprintf(s_vel_f, "%.2f", nova_vel_f);
-                    sprintf(s_vel_c, "%.2f", nova_vel_c);
-                    sprintf(s_c_pal, "%d", c_pal);
-                    sprintf(s_m_pal, "%d", m_pal);
-                    waitS(id_sem);
-                    sprintf(s_numero, "%d", atoi(comp->n_pilotes) + 1);
-                    sprintf(s_id_sem, "%d", id_sem);
-                    */
-                    //if (fork() == 0)
-                    //{
-                        /* Passem els arguments com a cadenes de text */
-
-                    //    execlp("./pilota2", "pilota2", s_id_mem, s_fil, s_col,
-                    //           s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, s_numero, s_id_sem, (char *)NULL);
-                    //    exit(1);
-                    //}
-                    char missatge_enviat[20];
-                    missatge_enviat[0] = 'P';
-                    missatge_enviat[1] = 'B';
-                    sendM(id_mis, missatge_enviat, sizeof(missatge_enviat));
+                    
+                    enviar_missatge(nova_vel_f, nova_vel_c);
                 }
 
                 if (rv == '0')
@@ -198,10 +195,12 @@ int mou_pilota(void)
             signalS(id_sem);
             if (rh != ' ')
             {
-
-                comprovar_bloc(f_pil, c_h);
                 vel_c = -vel_c;
                 c_h = pos_c + vel_c;
+                
+                if (comprovar_bloc(f_pil, c_h) == BLKCHAR){
+                    enviar_missatge(vel_f, vel_c);      // Potser no funciona TODO
+                }
             }
         }
         /* Comprovar rebot diagonal (caires de les estructures) */
@@ -212,11 +211,13 @@ int mou_pilota(void)
             signalS(id_sem);
             if (rd != ' ')
             {
-                comprovar_bloc(f_h, c_h);
-                vel_f = -vel_f;
-                vel_c = -vel_c;
-                f_h = pos_f + vel_f;
-                c_h = pos_c + vel_c;
+                if (comprovar_bloc(f_h, c_h) == BLKCHAR){
+                    vel_f = -vel_f;
+                    vel_c = -vel_c;
+                    f_h = pos_f + vel_f;
+                    c_h = pos_c + vel_c;
+                    enviar_missatge(vel_f, vel_c);      // Potser no funciona TODO
+                }
             }
         }
 
