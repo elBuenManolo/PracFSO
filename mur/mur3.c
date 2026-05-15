@@ -98,8 +98,8 @@ typedef struct
 {
 	int nblocs;
 	int npilotes;
-	char tauler;
 	int fi1;
+	char tauler;
 } dades_t;
 
 typedef struct
@@ -382,7 +382,7 @@ void * mou_paleta(void * arg){
 					win_escricar(f_pal, c_pal, '0', INVERS);
 				}
 				if (tecla == TEC_RETURN)
-					result = 1; /* L'usuari vol sortir */
+					comp->fi1 = 1; /* L'usuari vol sortir */
 				dirPaleta = tecla;
 				signalS(id_sem);
 			}
@@ -518,9 +518,6 @@ int main(int n_args, char *ll_args[])
 	/* 4. Bucle principal d'execució del joc */
 	do
 	{
-
-		//comp->fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
-
 		MISSATGE missatge_rebut; 
 
 		sendM(id_mis, &missatge_enviat, sizeof(missatge_enviat));

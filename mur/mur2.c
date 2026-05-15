@@ -99,8 +99,8 @@ typedef struct
 {
 	int nblocs;
 	int npilotes;
-	char tauler;
 	int fi1;
+	char tauler;
 } dades_t;
 
 dades_t *comp;

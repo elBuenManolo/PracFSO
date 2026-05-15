@@ -78,4 +78,4 @@ pilota3: pilota3.o winsuport2.o memoria.o semafor.o missatge.o
 # --- Neteja ---
 # Executar 'make clean' per esborrar els binaris i fitxers objecte
 clean:
-	rm -f *.o mur0 mur1 pilota1 mur2 pilota2 mur3
+	rm -f *.o mur0 mur1 pilota1 mur2 pilota2 mur3 pilota3
