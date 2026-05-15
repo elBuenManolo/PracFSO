@@ -88,6 +88,8 @@ int comptador_retard = 0;
 
 int tecla_global = 0;
 
+pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
+
 typedef struct
 {
     char origen;
@@ -341,9 +343,9 @@ void * mou_paleta(void * arg){
 	if (num_paleta == 0){
 
 		do{
+			
 			if (tecla_global != 0)
 			{
-				
 				if ((tecla_global == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
 				{
 					/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
@@ -372,8 +374,8 @@ void * mou_paleta(void * arg){
 					signalS(id_sem);
 				}
 				dirPaleta = tecla_global;
-				
 			}
+			
 			win_retard(retard);
 		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
 
@@ -407,7 +409,7 @@ void * mou_paleta(void * arg){
 						win_escricar(paletes[pal].f_pal + possible, paletes[pal].c_pal + i, (char)(num_paleta + '0'), INVERS);
 						signalS(id_sem);
 					}
-					paletes[pal].f_pal += possible;
+					paletes[pal].f_pal += possible; //mutex
 				}
 			}
 
@@ -419,14 +421,14 @@ void * mou_paleta(void * arg){
 					waitS(id_sem);
 					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal, ' ', NO_INV);
 					signalS(id_sem);
-					paletes[pal].c_pal++;
+					paletes[pal].c_pal++; //mutex
 					waitS(id_sem);
 					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + paletes[pal].m_pal - 1, (char)(num_paleta + '0'), INVERS);
 					signalS(id_sem);
 				}
 				else
 				{
-					paletes[pal].dirPaleta = -1; // Canvia de direcció
+					paletes[pal].dirPaleta = -1; //mutex // Canvia de direcció
 				}
 			}
 			else if (paletes[pal].dirPaleta == -1) // Esquerra
@@ -437,19 +439,19 @@ void * mou_paleta(void * arg){
 					waitS(id_sem);
 					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + paletes[pal].m_pal - 1, ' ', NO_INV);
 					signalS(id_sem);
-					paletes[pal].c_pal--;
+					paletes[pal].c_pal--; //mutex
 					waitS(id_sem);
 					win_escricar(paletes[pal].f_pal, paletes[pal].c_pal, (char)(num_paleta + '0'), INVERS);
 					signalS(id_sem);
 				}
 				else
 				{
-					paletes[pal].dirPaleta = 1; // Canvia de direcció
+					paletes[pal].dirPaleta = 1; //mutex // Canvia de direcció
 				}
 			}
 
 			win_retard(retard);
-		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
+		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0); //mutex
 
 	}
 	return NULL;

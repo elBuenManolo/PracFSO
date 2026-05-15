@@ -88,14 +88,14 @@ char comprovar_bloc(int f, int c)
     {
         col = c;
         /* Esborrar cap a la dreta fins trobar un espai buit */
-        while (win_quincar(f, col) != ' ')
+        while (col < n_col - 1 && win_quincar(f, col) != ' ')
         {
             win_escricar(f, col, ' ', NO_INV);
             col++;
         }
         col = c - 1;
         /* Esborrar cap a l'esquerra fins trobar un espai buit */
-        while (win_quincar(f, col) != ' ')
+        while (col > 0 && win_quincar(f, col) != ' ')
         {
             win_escricar(f, col, ' ', NO_INV);
             col--;
@@ -322,6 +322,8 @@ int main(int n_args, char *ll_args[])
         if (missatge.origen == 'F' && missatge.desti == 'F'){
             vel_f = -vel_f + missatge.velf_pilota;
             vel_c = -vel_c + missatge.velc_pilota;
+        } else if (missatge.origen == 'F' && missatge.desti == 'P'){
+            sendM(id_mis, &missatge, sizeof(missatge));
         }
         fi2 = mou_pilota();
         if (fi2){

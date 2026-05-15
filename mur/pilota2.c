@@ -80,14 +80,14 @@ char comprovar_bloc(int f, int c)
     {
         col = c;
         /* Esborrar cap a la dreta fins trobar un espai buit */
-        while (win_quincar(f, col) != ' ')
+        while (col < n_col - 1 && win_quincar(f, col) != ' ')
         {
             win_escricar(f, col, ' ', NO_INV);
             col++;
         }
         col = c - 1;
         /* Esborrar cap a l'esquerra fins trobar un espai buit */
-        while (win_quincar(f, col) != ' ')
+        while (col > 0 && win_quincar(f, col) != ' ')
         {
             win_escricar(f, col, ' ', NO_INV);
             col--;
