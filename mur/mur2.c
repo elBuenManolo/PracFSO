@@ -88,11 +88,11 @@ int comptador_retard = 0;
 
 typedef struct
 {
-    long origen;
-    long desti;
+    char origen;
+    char desti;
     char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
     char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
-    char s_c_pal[8], s_m_pal[8], s_numero[8], s_id_sem[8], s_id_mis[8];
+    char s_c_pal[8], s_m_pal[8], s_id_sem[8], s_id_mis[8];
 } MISSATGE;
 
 typedef struct
@@ -333,6 +333,8 @@ int mou_paleta(void)
 
 void crear_pilota(MISSATGE *missatge) {
 	if (fork() == 0){
+		char s_npilotes[8];
+		sprintf(s_npilotes, "%d", npilotes);
 		execlp("./pilota2", "pilota2",
 			missatge->s_id_mem,
 			missatge->s_fil,
@@ -344,12 +346,13 @@ void crear_pilota(MISSATGE *missatge) {
 			missatge->s_retard,
 			missatge->s_c_pal,
 			missatge->s_m_pal,
-			missatge->s_numero,
+			s_npilotes,
 			missatge->s_id_sem,
 			missatge->s_id_mis,
 			(char *)NULL);
 		exit(1); // Surto del fill, el pare no ha de continuar
 	}
+	npilotes++;
 }
 
 /* --- Programa Principal --- */
@@ -400,6 +403,10 @@ int main(int n_args, char *ll_args[])
 	id_sem = ini_sem(1);
 	id_mis = ini_mis();
 
+	MISSATGE missatge_enviat;
+	missatge_enviat.desti = 'P';
+	missatge_enviat.origen = 'P';
+
 	char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
 	char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
 	char s_c_pal[8], s_m_pal[8], s_id_sem[8], s_id_mis[8];
@@ -426,18 +433,21 @@ int main(int n_args, char *ll_args[])
 			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, (char *)"1", s_id_sem, s_id_mis, (char *)NULL);
 		exit(1);
 	}
-
+	npilotes = 2; // comptador per a escriure
 	/* 4. Bucle principal d'execució del joc */
 	do
 	{
 
 		comp->fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
 
-		MISSATGE missatge_rebut;
+		MISSATGE missatge_rebut; 
 
-		receiveM(id_mis, &missatge_rebut);
-		if (missatge_rebut.origen == 'F')					// Creem pilotes si rebem un missatge del fill (nova pilota)
-			crear_pilota(&missatge_rebut);
+		sendM(id_mis, &missatge_enviat, sizeof(missatge_enviat));
+		if (receiveM(id_mis, &missatge_rebut) > 0) {
+			if (missatge_rebut.origen == 'F') {
+				crear_pilota(&missatge_rebut);
+			}
+		}
 
 		comptador_retard += retard;
 		if (comptador_retard >= 1000) /* Ha passat 1 segon */
@@ -452,9 +462,9 @@ int main(int n_args, char *ll_args[])
 		}
 		sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d", minuts, segons, comp->nblocs, comp->npilotes);
 		win_escristr(strin);
-		//waitS(id_sem);
+		waitS(id_sem);
 		win_update(); /* Bolcar els canvis fets a la memòria a la pantalla física */
-		//signalS(id_sem);
+		signalS(id_sem);
 		win_retard(retard); /* Pausar el procés el temps establert abans del següent frame */
 	} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0); /* Sortir si demanem sortir (!fi1) o acaba la partida (!fi2) */
 

@@ -52,7 +52,7 @@ typedef struct
     char desti;
     char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
     char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
-    char s_c_pal[8], s_m_pal[8], s_numero[8], s_id_sem[8], s_id_mis[8];
+    char s_c_pal[8], s_m_pal[8], s_id_sem[8], s_id_mis[8];
 } MISSATGE;
 
 typedef struct
@@ -112,13 +112,8 @@ void enviar_missatge(float nova_vel_f, float nova_vel_c)
     sprintf(missatge.s_vel_c, "%.2f", nova_vel_c);
     sprintf(missatge.s_c_pal, "%d", c_pal);
     sprintf(missatge.s_m_pal, "%d", m_pal);
-    waitS(id_sem);
-    comp->npilotes++;
-    sprintf(missatge.s_numero, "%d", comp->npilotes);
-    signalS(id_sem);
     sprintf(missatge.s_id_sem, "%d", id_sem);
     sprintf(missatge.s_id_mis, "%d", id_mis);
-    
 
     missatge.origen = 'F'; // F = Fill
     missatge.desti = 'P'; // P = Pare
@@ -195,12 +190,11 @@ int mou_pilota(void)
             signalS(id_sem);
             if (rh != ' ')
             {
+                if (comprovar_bloc(f_pil, c_h) == BLKCHAR){
+                    enviar_missatge(vel_f, -vel_c);      // Potser no funciona TODO
+                }
                 vel_c = -vel_c;
                 c_h = pos_c + vel_c;
-                
-                if (comprovar_bloc(f_pil, c_h) == BLKCHAR){
-                    enviar_missatge(vel_f, vel_c);      // Potser no funciona TODO
-                }
             }
         }
         /* Comprovar rebot diagonal (caires de les estructures) */
@@ -280,6 +274,8 @@ int main(int n_args, char *ll_args[])
         fi2 = mou_pilota();
         win_retard(retard);
     } while (!fi2 && comp->npilotes > 0 && !comp->fi1);
-
+    waitS(id_sem);
+    comp->npilotes--;
+    signalS(id_sem);
     return 0;
 }
