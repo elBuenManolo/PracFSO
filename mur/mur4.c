@@ -95,6 +95,7 @@ typedef struct
     char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
     char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
     char s_c_pal[8], s_m_pal[8], s_id_sem[8], s_id_mis[8];
+	int velf_pilota, velc_pilota;
 } MISSATGE;
 
 typedef struct
@@ -102,7 +103,7 @@ typedef struct
 	int nblocs;
 	int npilotes;
 	int fi1;
-	int temps_poder;
+	int poder_actiu; // Flag booleà per saber si el poder està actiu
 	char tauler;
 } dades_t;
 
@@ -215,7 +216,7 @@ int inicialitza_joc(void)
 	win_set(&(comp->tauler), n_fil, n_col);
 
 	comp->npilotes = 0;
-	comp->temps_poder = 0;
+	comp->poder_actiu = 0;
 
 	/* Càlcul de la porteria inferior */
 	if (m_por > n_col - 2)
@@ -483,6 +484,7 @@ int main(int n_args, char *ll_args[])
 {
 	int i;
 	FILE *fit_conf;
+	int temps_poder = 0; // Variable local per al temporitzador del poder
 
 	/* 1. Comprovació d'arguments d'entrada */
 	if ((n_args != 2) && (n_args != 3))
@@ -574,18 +576,28 @@ int main(int n_args, char *ll_args[])
 
 		sendM(id_mis, &missatge_enviat, sizeof(missatge_enviat));
 		if (receiveM(id_mis, &missatge_rebut) > 0) {
-			if (missatge_rebut.origen == 'F') {
+			if (missatge_rebut.origen == 'F' && missatge_rebut.desti == 'P') {
 				crear_pilota(&missatge_rebut);
+			} else if (missatge_rebut.origen == 'T') {
+				temps_poder += 5000; // Incrementem en 5 segons
+				waitS(id_sem);
+				comp->poder_actiu = 1;
+				signalS(id_sem);
+			} else if (missatge_rebut.origen == 'F' && missatge_rebut.desti == 'F') {
+				sendM(id_mis, &missatge_rebut, sizeof(missatge_rebut));
 			}
 		}
 
 		comptador_retard += retard;
 		
-		if (comp->temps_poder > 0) {
-			waitS(id_sem);
-			comp->temps_poder -= retard;
-			if (comp->temps_poder < 0) comp->temps_poder = 0;
-			signalS(id_sem);
+		if (temps_poder > 0) {
+			temps_poder -= retard;
+			if (temps_poder <= 0) {
+				temps_poder = 0;
+				waitS(id_sem);
+				comp->poder_actiu = 0;
+				signalS(id_sem);
+			}
 		}
 
 		if (comptador_retard >= 1000) /* Ha passat 1 segon */
@@ -599,8 +611,8 @@ int main(int n_args, char *ll_args[])
 			comptador_retard = 0;
 		}
 		
-		if (comp->temps_poder > 0)
-			sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d | PODER: %.1fs", minuts, segons, comp->nblocs, comp->npilotes, comp->temps_poder / 1000.0);
+		if (temps_poder > 0)
+			sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d | PODER: %.1fs", minuts, segons, comp->nblocs, comp->npilotes, temps_poder / 1000.0);
 		else
 			sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d", minuts, segons, comp->nblocs, comp->npilotes);
 		

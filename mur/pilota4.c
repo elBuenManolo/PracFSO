@@ -59,6 +59,7 @@ typedef struct
     char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
     char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
     char s_c_pal[8], s_m_pal[8], s_id_sem[8], s_id_mis[8];
+    int velf_pilota, velc_pilota;
 } MISSATGE;
 
 typedef struct
@@ -66,7 +67,7 @@ typedef struct
     int nblocs;
     int npilotes;
     int fi1;
-    int temps_poder; // Temporitzador del poder
+    int poder_actiu; // Flag booleà per saber si el poder està actiu
     char tauler;
 } dades_t;
 
@@ -103,8 +104,22 @@ char comprovar_bloc(int f, int c)
         signalS(id_sem);
         return quin;
     }
+    else if (comp->poder_actiu && quin == WLLCHAR)
+    {
+        /* Destrucció parcial del mur irrompible: esborrem la posició concreta */
+        win_escricar(f, c, ' ', NO_INV);
+        signalS(id_sem);
+        return quin;
+    }
     signalS(id_sem);
     return ' ';
+}
+
+void enviar_missatge_poder(void)
+{
+    missatge.origen = 'T'; // 'T' per avisar al pare del bloc T
+    missatge.desti = 'P';
+    sendM(id_mis, &missatge, sizeof(missatge));
 }
 
 void enviar_missatge(float nova_vel_f, float nova_vel_c)
@@ -184,9 +199,7 @@ int mou_pilota(void)
                 }
                 else if (quin_bloc == FRNTCHAR)
                 {
-                    waitS(id_sem);
-                    comp->temps_poder = 10000; // 10 segons per defecte
-                    signalS(id_sem);
+                    enviar_missatge_poder();
                 }
 
                 if (rv == '0')
@@ -209,9 +222,7 @@ int mou_pilota(void)
                 }
                 else if (quin_bloc == FRNTCHAR)
                 {
-                    waitS(id_sem);
-                    comp->temps_poder = 10000; // 10 segons per defecte
-                    signalS(id_sem);
+                    enviar_missatge_poder();
                 }
                 vel_c = -vel_c;
                 c_h = pos_c + vel_c;
@@ -231,9 +242,7 @@ int mou_pilota(void)
                 }
                 else if (quin_bloc == FRNTCHAR)
                 {
-                    waitS(id_sem);
-                    comp->temps_poder = 10000; // 10 segons per defecte
-                    signalS(id_sem);
+                    enviar_missatge_poder();
                 }
                 vel_f = -vel_f;
                 vel_c = -vel_c;
@@ -254,7 +263,10 @@ int mou_pilota(void)
             /* Si estem dins del tauler, la pintem. Si passem la línia, s'ha colat */
             if (f_pil != n_fil - 1)
             {
-                win_escricar(f_pil, c_pil, numero, INVERS);
+                if (comp->poder_actiu)
+                    win_escricar(f_pil, c_pil, numero, INVERS);
+                else
+                    win_escricar(f_pil, c_pil, numero, NO_INV);
             }
             else
             {
@@ -301,6 +313,16 @@ int main(int n_args, char *ll_args[])
     do
     {
         fi2 = mou_pilota();
+        if (fi2){
+
+
+
+
+
+
+
+
+        }
         win_retard(retard);
     } while (!fi2 && comp->npilotes > 0 && !comp->fi1);
     return 0;
