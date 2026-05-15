@@ -85,6 +85,8 @@ int id_mis;
 int minuts, segons;
 int comptador_retard = 0;
 
+int tecla_global = 0;
+
 typedef struct
 {
     char origen;
@@ -362,29 +364,27 @@ void * mou_paleta(void * arg){
 	// 0 = Paleta de l'usuari
 	if (num_paleta == 0){
 
-		int tecla;
 		do{
-			tecla = win_gettec();
-			if (tecla != 0)
+			if (tecla_global != 0)
 			{
 				waitS(id_sem);
-				if ((tecla == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
+				if ((tecla_global == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
 				{
 					/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
 					win_escricar(f_pal, c_pal, ' ', NO_INV);
 					c_pal++;
 					win_escricar(f_pal, c_pal + m_pal - 1, '0', INVERS);
 				}
-				if ((tecla == TEC_ESQUER) && (c_pal > 1))
+				if ((tecla_global == TEC_ESQUER) && (c_pal > 1))
 				{
 					/* Esborrar l'extrem dret i pintar el nou extrem esquerre */
 					win_escricar(f_pal, c_pal + m_pal - 1, ' ', NO_INV);
 					c_pal--;
 					win_escricar(f_pal, c_pal, '0', INVERS);
 				}
-				if (tecla == TEC_RETURN)
+				if (tecla_global == TEC_RETURN)
 					comp->fi1 = 1; /* L'usuari vol sortir */
-				dirPaleta = tecla;
+				dirPaleta = tecla_global;
 				signalS(id_sem);
 			
 			}
@@ -519,6 +519,8 @@ int main(int n_args, char *ll_args[])
 	/* 4. Bucle principal d'execució del joc */
 	do
 	{
+
+		tecla_global = win_gettec();
 		MISSATGE missatge_rebut; 
 
 		sendM(id_mis, &missatge_enviat, sizeof(missatge_enviat));
