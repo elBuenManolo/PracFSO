@@ -14,6 +14,8 @@ fase2: mur2 pilota2
 
 fase3: mur3 pilota3
 
+fase4: mur4 pilota4
+
 # Rutines compartides (llibreria gràfica i IPC)
 winsuport2.o: winsuport2.c winsuport2.h
 	$(CC) $(CFLAGS) -c winsuport2.c -o winsuport2.o

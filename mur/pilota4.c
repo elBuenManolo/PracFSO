@@ -26,7 +26,7 @@
 #define BLKGAP 2
 #define BLKCHAR 'B'
 #define WLLCHAR '#'
-#define FRNTCHAR 'A'
+#define FRNTCHAR 'T'
 #define LONGMISS 65
 
 /* Variables de la pilota */
@@ -66,6 +66,7 @@ typedef struct
     int nblocs;
     int npilotes;
     int fi1;
+    int temps_poder; // Temporitzador del poder
     char tauler;
 } dades_t;
 
@@ -173,13 +174,19 @@ int mou_pilota(void)
             signalS(id_sem);
             if (rv != ' ')
             {
-                if (comprovar_bloc(f_h, c_pil) == BLKCHAR)
+                char quin_bloc = comprovar_bloc(f_h, c_pil);
+                if (quin_bloc == BLKCHAR)
                 {
-
                     float nova_vel_f = -vel_f;
                     float nova_vel_c = -vel_c;
                     
                     enviar_missatge(nova_vel_f, nova_vel_c);
+                }
+                else if (quin_bloc == FRNTCHAR)
+                {
+                    waitS(id_sem);
+                    comp->temps_poder = 10000; // 10 segons per defecte
+                    signalS(id_sem);
                 }
 
                 if (rv == '0')
@@ -196,8 +203,15 @@ int mou_pilota(void)
             signalS(id_sem);
             if (rh != ' ')
             {
-                if (comprovar_bloc(f_pil, c_h) == BLKCHAR){
-                    enviar_missatge(vel_f, -vel_c);      // Potser no funciona TODO
+                char quin_bloc = comprovar_bloc(f_pil, c_h);
+                if (quin_bloc == BLKCHAR){
+                    enviar_missatge(vel_f, -vel_c);
+                }
+                else if (quin_bloc == FRNTCHAR)
+                {
+                    waitS(id_sem);
+                    comp->temps_poder = 10000; // 10 segons per defecte
+                    signalS(id_sem);
                 }
                 vel_c = -vel_c;
                 c_h = pos_c + vel_c;
@@ -211,8 +225,15 @@ int mou_pilota(void)
             signalS(id_sem);
             if (rd != ' ')
             {
-                if (comprovar_bloc(f_h, c_h) == BLKCHAR){
+                char quin_bloc = comprovar_bloc(f_h, c_h);
+                if (quin_bloc == BLKCHAR){
                     enviar_missatge(vel_f, vel_c);
+                }
+                else if (quin_bloc == FRNTCHAR)
+                {
+                    waitS(id_sem);
+                    comp->temps_poder = 10000; // 10 segons per defecte
+                    signalS(id_sem);
                 }
                 vel_f = -vel_f;
                 vel_c = -vel_c;

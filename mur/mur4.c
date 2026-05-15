@@ -29,7 +29,7 @@
 #define BLKGAP 2
 #define BLKCHAR 'B'
 #define WLLCHAR '#'
-#define FRNTCHAR 'A'
+#define FRNTCHAR 'T'
 #define LONGMISS 65
 
 /* Text d'ajuda que es mostra si s'executa el programa sense arguments */
@@ -102,6 +102,7 @@ typedef struct
 	int nblocs;
 	int npilotes;
 	int fi1;
+	int temps_poder;
 	char tauler;
 } dades_t;
 
@@ -214,6 +215,7 @@ int inicialitza_joc(void)
 	win_set(&(comp->tauler), n_fil, n_col);
 
 	comp->npilotes = 0;
+	comp->temps_poder = 0;
 
 	/* Càlcul de la porteria inferior */
 	if (m_por > n_col - 2)
@@ -456,7 +458,7 @@ void crear_pilota(MISSATGE *missatge) {
 	if (fork() == 0){
 		char s_npilotes[8];
 		sprintf(s_npilotes, "%d", npilotes);
-		execlp("./pilota3", "pilota3",
+		execlp("./pilota4", "pilota4",
 			missatge->s_id_mem,
 			missatge->s_fil,
 			missatge->s_col,
@@ -550,7 +552,7 @@ int main(int n_args, char *ll_args[])
 	{
 
 		/* Passem els arguments com a cadenes de text */
-		execlp("./pilota3", "pilota3", s_id_mem, s_fil, s_col,
+		execlp("./pilota4", "pilota4", s_id_mem, s_fil, s_col,
 			   s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, (char *)"1", s_id_sem, s_id_mis, (char *)NULL);
 		exit(1);
 	}
@@ -578,6 +580,14 @@ int main(int n_args, char *ll_args[])
 		}
 
 		comptador_retard += retard;
+		
+		if (comp->temps_poder > 0) {
+			waitS(id_sem);
+			comp->temps_poder -= retard;
+			if (comp->temps_poder < 0) comp->temps_poder = 0;
+			signalS(id_sem);
+		}
+
 		if (comptador_retard >= 1000) /* Ha passat 1 segon */
 		{
 			segons++;
@@ -588,7 +598,12 @@ int main(int n_args, char *ll_args[])
 			}
 			comptador_retard = 0;
 		}
-		sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d", minuts, segons, comp->nblocs, comp->npilotes);
+		
+		if (comp->temps_poder > 0)
+			sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d | PODER: %.1fs", minuts, segons, comp->nblocs, comp->npilotes, comp->temps_poder / 1000.0);
+		else
+			sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d", minuts, segons, comp->nblocs, comp->npilotes);
+		
 		win_escristr(strin);
 		waitS(id_sem);
 		win_update(); /* Bolcar els canvis fets a la memòria a la pantalla física */
