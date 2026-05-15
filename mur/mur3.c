@@ -109,6 +109,8 @@ typedef struct
 	int dirPaleta;
 } paleta_t;
 
+pthread_t tid[MAX_THREADS + 1];
+
 dades_t *comp;
 paleta_t paletes[MAX_THREADS];
 
@@ -125,7 +127,7 @@ int carrega_configuracio(FILE *fit)
 	
 	fscanf(fit, "P %d\n", &npaletes);			// La primera fila amb P és el nombre de paletes
 	
-	if (n_paletes != 1){
+	if (npaletes != 1){
 		for (int i = 0; i < npaletes; i++)
 		{
 			fscanf(fit, "%d %d %d %d\n", &paletes[i].f_pal, &paletes[i].c_pal, &paletes[i].m_pal, &paletes[i].dirPaleta);
@@ -323,45 +325,44 @@ float control_impacte2(int c_pil, float velc0)
 /* * Captura les entrades del teclat de l'usuari i desplaça la paleta.
  * Retorna 1 si es prem la tecla RETURN per abandonar la partida.
  */
-int mou_paleta(void)
-{
-	int tecla, result;
-
-	result = 0;
-	tecla = win_gettec();
-	if (tecla != 0)
-	{
-		waitS(id_sem);
-		if ((tecla == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
-		{
-			/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
-			win_escricar(f_pal, c_pal, ' ', NO_INV);
-			c_pal++;
-			win_escricar(f_pal, c_pal + m_pal - 1, '0', INVERS);
-		}
-		if ((tecla == TEC_ESQUER) && (c_pal > 1))
-		{
-			/* Esborrar l'extrem dret i pintar el nou extrem esquerre */
-			win_escricar(f_pal, c_pal + m_pal - 1, ' ', NO_INV);
-			c_pal--;
-			win_escricar(f_pal, c_pal, '0', INVERS);
-		}
-		if (tecla == TEC_RETURN)
-			result = 1; /* L'usuari vol sortir */
-		dirPaleta = tecla;
-		signalS(id_sem);
-	}
-	return (result);
-}
+//	int mou_paleta(void)
+//	{
+//		int tecla, result = 0;
+//
+//		tecla = win_gettec();
+//		if (tecla != 0)
+//		{
+//			waitS(id_sem);
+//			if ((tecla == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
+//			{
+//				/* Esborrar l'extrem esquerre i pintar el nou extrem dret */
+//				win_escricar(f_pal, c_pal, ' ', NO_INV);
+//				c_pal++;
+//				win_escricar(f_pal, c_pal + m_pal - 1, '0', INVERS);
+//			}
+//			if ((tecla == TEC_ESQUER) && (c_pal > 1))
+//			{
+//				/* Esborrar l'extrem dret i pintar el nou extrem esquerre */
+//				win_escricar(f_pal, c_pal + m_pal - 1, ' ', NO_INV);
+//				c_pal--;
+//				win_escricar(f_pal, c_pal, '0', INVERS);
+//			}
+//			if (tecla == TEC_RETURN)
+//				result = 1; /* L'usuari vol sortir */
+//			
+//			dirPaleta = tecla;
+//			signalS(id_sem);
+//		}
+//		return (result);
+//	}
 
 void * mou_paleta(void * arg){
 
-	int num_paleta = (int) arg;
+	int num_paleta = (int)(long) arg;
 	// 0 = Paleta de l'usuari
 	if (num_paleta == 0){
 
-		int tecla, result;
-		result = 0;
+		int tecla;
 		do{
 			tecla = win_gettec();
 			if (tecla != 0)
@@ -385,8 +386,9 @@ void * mou_paleta(void * arg){
 					comp->fi1 = 1; /* L'usuari vol sortir */
 				dirPaleta = tecla;
 				signalS(id_sem);
+			
 			}
-
+			win_retard(retard);
 		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
 
 	}
@@ -400,7 +402,7 @@ void * mou_paleta(void * arg){
 		}while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
 
 	}
-
+	return NULL;
 }
 
 void crear_pilota(MISSATGE *missatge) {
@@ -430,7 +432,7 @@ void crear_pilota(MISSATGE *missatge) {
 /* --- Programa Principal --- */
 int main(int n_args, char *ll_args[])
 {
-	int i /*, fi2*/;
+	int i;
 	FILE *fit_conf;
 
 	/* 1. Comprovació d'arguments d'entrada */
@@ -508,12 +510,11 @@ int main(int n_args, char *ll_args[])
 	npilotes = 2; // comptador per a escriure
 
 	// 0 = Paleta de l'usuari
-	pthread_create(&tid[0], NULL, mou_paleta, (void *)0);
+	pthread_create(&tid[0], NULL, mou_paleta, (void*)(long)0);
 
 	// Paletes controlades per la IA
 	for (int i = 1; i < npaletes; i++){
-		pthread_create(&tid[i], NULL, mou_paleta, (void *)i);
-
+		pthread_create(&tid[i], NULL, mou_paleta, (void*)(long)i);
 	}
 	/* 4. Bucle principal d'execució del joc */
 	do
