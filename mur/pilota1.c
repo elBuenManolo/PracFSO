@@ -166,7 +166,7 @@ int mou_pilota(void)
             rh = win_quincar(f_pil, c_h);
             if (rh != ' ')
             {
-                if (comprovar_bloc(f_h, c_pil) == BLKCHAR)
+                if (comprovar_bloc(f_pil, c_h) == BLKCHAR)
                 {
                     char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
                     char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
@@ -205,7 +205,7 @@ int mou_pilota(void)
             rd = win_quincar(f_h, c_h);
             if (rd != ' ')
             {
-                if (comprovar_bloc(f_h, c_pil) == BLKCHAR)
+                if (comprovar_bloc(f_h, c_h) == BLKCHAR)
                 {
                     char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
                     char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
