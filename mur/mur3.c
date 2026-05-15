@@ -376,25 +376,23 @@ void * mou_paleta(void * arg){
 
 	}
 	else{
-		bool possible = true;
+		int possible = -1; // Per defecte cap a dalt (-1 disminueix la fila)
 		int pal = num_paleta - 1;			// Com paletes[] està en base 0 i dins de paletes no està la paleta de l'usuari, restem 1 per accedir correctament
 		do{
-			if (tecla_global == num_paleta){
+			if (tecla_global == (num_paleta + '0')){
 
 				waitS(id_sem);
 				for (int i = 0; i < paletes[pal].m_pal; i++){
-					if (win_quincar(paletes[pal].f_pal + 1, paletes[pal].c_pal + i) != ' '){
-						possible = false;
-						break;
+					if (possible == 1 && win_quincar(paletes[pal].f_pal + 1, paletes[pal].c_pal + i) != ' '){
+						possible = -1; // Si xoca a baix, cap a dalt
 					}
-					if (win_quincar(paletes[pal].f_pal - 1, paletes[pal].c_pal + i) != ' '){
-						possible = false;
-						break;
+					else if (possible == -1 && win_quincar(paletes[pal].f_pal - 1, paletes[pal].c_pal + i) != ' '){
+						possible = 1; // Si xoca a dalt, cap a baix
 					}
 				}
 				signalS(id_sem);
 
-				if (possible){
+				if (possible != 0){
 					for (int i = 0; i < paletes[pal].m_pal; i++){
 						waitS(id_sem);
 						win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + i, ' ', NO_INV);
@@ -403,11 +401,11 @@ void * mou_paleta(void * arg){
 
 					for (int i = 0; i < paletes[pal].m_pal; i++){
 						waitS(id_sem);
-						win_escricar(paletes[pal].f_pal, paletes[pal].c_pal + i, (char)(num_paleta + '0'), INVERS);
+						win_escricar(paletes[pal].f_pal + possible, paletes[pal].c_pal + i, (char)(num_paleta + '0'), INVERS);
 						signalS(id_sem);
 					}
+					paletes[pal].f_pal += possible;
 				}
-				possible = true;
 			}
 
 			if (paletes[pal].dirPaleta == 1) // Dreta
