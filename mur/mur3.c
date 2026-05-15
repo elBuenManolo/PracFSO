@@ -14,6 +14,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <pthread.h>
+#include <stdbool.h>
 
 /* --- Definicions de constants --- */
 #define MAX_THREADS 10
@@ -375,18 +376,18 @@ void * mou_paleta(void * arg){
 
 	}
 	else{
-		bool posible = true;
+		bool possible = true;
 		int pal = num_paleta - 1;			// Com paletes[] està en base 0 i dins de paletes no està la paleta de l'usuari, restem 1 per accedir correctament
 		do{
 			if (tecla_global == num_paleta){
 
 				waitS(id_sem);
 				for (int i = 0; i < paletes[pal].m_pal; i++){
-					if (win_quincar(paletes[pal].f_pal + 1, paletes[pal].c_pal + i) == ' '){
+					if (win_quincar(paletes[pal].f_pal + 1, paletes[pal].c_pal + i) != ' '){
 						possible = false;
 						break;
 					}
-					if (win_quincar(paletes[pal].f_pal - 1, paletes[pal].c_pal + i) == ' '){
+					if (win_quincar(paletes[pal].f_pal - 1, paletes[pal].c_pal + i) != ' '){
 						possible = false;
 						break;
 					}
