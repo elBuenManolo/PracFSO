@@ -315,7 +315,7 @@ int main(int n_args, char *ll_args[])
     do
     {
         automsg.desti = 'N';                    // N = Ningú 
-        automsg.origen = 'P';
+        automsg.origen = 'F';                   // F = Fill
         sendM(id_mis, &automsg, sizeof(missatge));
 
         receiveM(id_mis, &missatge);
