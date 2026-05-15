@@ -398,8 +398,8 @@ void * mou_paleta(void * arg){
 
 
 
-
-		}while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
+			win_retard(retard);
+		} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0);
 
 	}
 	return NULL;
