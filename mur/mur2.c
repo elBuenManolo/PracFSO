@@ -90,9 +90,9 @@ typedef struct
 {
     long origen;
     long desti;
-    char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
-    char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
-    char s_c_pal[10], s_m_pal[10], s_numero[10], s_id_sem[10], s_id_mis[10];
+    char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
+    char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
+    char s_c_pal[8], s_m_pal[8], s_numero[8], s_id_sem[8], s_id_mis[8];
 } MISSATGE;
 
 typedef struct
@@ -400,9 +400,9 @@ int main(int n_args, char *ll_args[])
 	id_sem = ini_sem(1);
 	id_mis = ini_mis();
 
-	char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
-	char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
-	char s_c_pal[10], s_m_pal[10], s_id_sem[10], s_id_mis[10];
+	char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
+	char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
+	char s_c_pal[8], s_m_pal[8], s_id_sem[8], s_id_mis[8];
 
 	/* Conversió de dades a string */
 	sprintf(s_id_mem, "%d", id_mem);
@@ -433,11 +433,11 @@ int main(int n_args, char *ll_args[])
 
 		comp->fi1 = mou_paleta(); /* Moure la paleta i llegir teclat */
 
-		//MISSATGE missatge_rebut;
+		MISSATGE missatge_rebut;
 
-		//receiveM(id_mis, &missatge_rebut);
-		//if (missatge_rebut.origen == 'F')					// Creem pilotes si rebem un missatge del fill (nova pilota)
-		//	crear_pilota(&missatge_rebut);
+		receiveM(id_mis, &missatge_rebut);
+		if (missatge_rebut.origen == 'F')					// Creem pilotes si rebem un missatge del fill (nova pilota)
+			crear_pilota(&missatge_rebut);
 
 		comptador_retard += retard;
 		if (comptador_retard >= 1000) /* Ha passat 1 segon */

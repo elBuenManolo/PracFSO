@@ -50,9 +50,9 @@ typedef struct
 {
     char origen;
     char desti;
-    char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
-    char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
-    char s_c_pal[10], s_m_pal[10], s_numero[10], s_id_sem[10], s_id_mis[10];
+    char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
+    char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
+    char s_c_pal[8], s_m_pal[8], s_numero[8], s_id_sem[8], s_id_mis[8];
 } MISSATGE;
 
 typedef struct
