@@ -166,7 +166,35 @@ int mou_pilota(void)
             rh = win_quincar(f_pil, c_h);
             if (rh != ' ')
             {
-                comprovar_bloc(f_pil, c_h);
+                if (comprovar_bloc(f_h, c_pil) == BLKCHAR)
+                {
+                    char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
+                    char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
+                    char s_c_pal[10], s_m_pal[10], s_numero[10];
+
+                    float nova_vel_f = -vel_f;
+                    float nova_vel_c = -vel_c;
+
+                    sprintf(s_id_mem, "%d", id_mem);
+                    sprintf(s_fil, "%d", n_fil);
+                    sprintf(s_col, "%d", n_col);
+                    sprintf(s_retard, "%d", retard);
+                    sprintf(s_pos_f, "%.2f", pos_f);
+                    sprintf(s_pos_c, "%.2f", pos_c);
+                    sprintf(s_vel_f, "%.2f", nova_vel_f);
+                    sprintf(s_vel_c, "%.2f", nova_vel_c);
+                    sprintf(s_c_pal, "%d", c_pal);
+                    sprintf(s_m_pal, "%d", m_pal);
+                    sprintf(s_numero, "%d", comp->npilotes);
+
+                    if (fork() == 0)
+                    {
+                        /* Passem els arguments com a cadenes de text */
+                        execlp("./pilota1", "pilota1", s_id_mem, s_fil, s_col,
+                               s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, s_numero, (char *)NULL);
+                        exit(1);
+                    }
+                }
                 vel_c = -vel_c;
                 c_h = pos_c + vel_c;
             }
@@ -177,7 +205,35 @@ int mou_pilota(void)
             rd = win_quincar(f_h, c_h);
             if (rd != ' ')
             {
-                comprovar_bloc(f_h, c_h);
+                if (comprovar_bloc(f_h, c_pil) == BLKCHAR)
+                {
+                    char s_id_mem[10], s_fil[10], s_col[10], s_retard[10];
+                    char s_pos_f[10], s_pos_c[10], s_vel_f[10], s_vel_c[10];
+                    char s_c_pal[10], s_m_pal[10], s_numero[10];
+
+                    float nova_vel_f = -vel_f;
+                    float nova_vel_c = -vel_c;
+
+                    sprintf(s_id_mem, "%d", id_mem);
+                    sprintf(s_fil, "%d", n_fil);
+                    sprintf(s_col, "%d", n_col);
+                    sprintf(s_retard, "%d", retard);
+                    sprintf(s_pos_f, "%.2f", pos_f);
+                    sprintf(s_pos_c, "%.2f", pos_c);
+                    sprintf(s_vel_f, "%.2f", nova_vel_f);
+                    sprintf(s_vel_c, "%.2f", nova_vel_c);
+                    sprintf(s_c_pal, "%d", c_pal);
+                    sprintf(s_m_pal, "%d", m_pal);
+                    sprintf(s_numero, "%d", comp->npilotes);
+
+                    if (fork() == 0)
+                    {
+                        /* Passem els arguments com a cadenes de text */
+                        execlp("./pilota1", "pilota1", s_id_mem, s_fil, s_col,
+                               s_pos_f, s_pos_c, s_vel_f, s_vel_c, s_retard, s_c_pal, s_m_pal, s_numero, (char *)NULL);
+                        exit(1);
+                    }
+                }
                 vel_f = -vel_f;
                 vel_c = -vel_c;
                 f_h = pos_f + vel_f;
