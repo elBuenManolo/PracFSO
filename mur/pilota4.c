@@ -310,18 +310,31 @@ int main(int n_args, char *ll_args[])
     win_set(&(comp->tauler), n_fil, n_col);
     comp->npilotes = comp->npilotes + 1;
 
+    MISSATGE automsg;
+
     do
     {
+        automsg.desti = 'N';                    // N = Ningú 
+        automsg.origen = 'P';
+        sendM(id_mis, &automsg, sizeof(missatge));
+
+        receiveM(id_mis, &missatge);
+        if (missatge.origen == 'F' && missatge.desti == 'F'){
+            vel_f = -vel_f + missatge.velf_pilota;
+            vel_c = -vel_c + missatge.velc_pilota;
+        }
         fi2 = mou_pilota();
         if (fi2){
-
-
-
-
-
-
-
-
+            waitS(id_sem);
+            if (comp->npilotes <= 1){
+                MISSATGE msg;
+                msg.origen = 'F';               // Origen i destí -> F = Fill (Pilota)
+                msg.desti = 'F';
+                msg.velf_pilota = vel_f;        // Velocitats de la nova pilota
+                msg.velc_pilota = vel_c;
+                sendM(id_mis, &msg, sizeof(msg));
+            }
+            signalS(id_sem);    
         }
         win_retard(retard);
     } while (!fi2 && comp->npilotes > 0 && !comp->fi1);
