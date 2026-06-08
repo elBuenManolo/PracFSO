@@ -393,31 +393,33 @@ void * mou_paleta(void * arg){
 			win_retard(retard);
 			}
 
-			// 1. ENVIEM UN MISSATGE FANTASMA PER EVITAR EL BLOQUEIG
+			// 1. ENVIEM UN MISSATGE FANTASMA
             MISSATGE msg_dummy;
             msg_dummy.origen = 'D'; // 'D' de Dummy
             msg_dummy.desti = num_paleta + '0';
             sendM(id_mis, &msg_dummy, sizeof(MISSATGE));
 
-			MISSATGE msg_rebut;
-            if (receiveM(id_mis, &msg_rebut) > 0) {
-                // Comprovem si el missatge va dirigit a AQUESTA paleta
+            // Ciclem per la cua de missatges fins trobar el nostre dummy
+            do {
+                MISSATGE msg_rebut;
+                receiveM(id_mis, &msg_rebut); // Llegeix (bloqueja si la cua està buida, però hi ha el nostre dummy com a mínim)
+                
                 if (msg_rebut.desti == (num_paleta + '0')) {
-                    
-                    // 2. COMPROVEM QUE L'ORIGEN SIGUI DEL MAIN ('M') I NO EL NOSTRE DUMMY ('D')
-                    if (msg_rebut.origen == 'M') {
-                        // Creem el missatge sol·licitant al Main (desti 'P') la nova pilota
+                    if (msg_rebut.origen == 'D') {
+                        break; // Hem consumit el nostre dummy, netejant la cua
+                    } else if (msg_rebut.origen == 'M') {
+                        // El main (teclat) ens ha sol·licitat disparar
                         MISSATGE msg_spawn;
-                        msg_spawn.origen = 'F'; // 'F' és el que espera el Main per crear pilotes
+                        msg_spawn.origen = 'F'; // 'F' és el que espera el Main
                         msg_spawn.desti = 'P';  // Procés principal
 
-                        // Informació general (convertida a string per l'execlp)
+                        // Informació general
                         sprintf(msg_spawn.s_id_mem, "%d", id_mem);
                         sprintf(msg_spawn.s_fil, "%d", n_fil);
                         sprintf(msg_spawn.s_col, "%d", n_col);
                         sprintf(msg_spawn.s_retard, "%d", retard);
 
-                        // POSICIÓ I VELOCITAT (a sobre del punt mig, V=-1, H=0)
+                        // POSICIÓ I VELOCITAT
                         pthread_mutex_lock(&mutex);
                         float nova_pos_f = (float)paletes[pal].f_pal - 1.0;
                         float nova_pos_c = (float)paletes[pal].c_pal + ((float)paletes[pal].m_pal / 2.0);
@@ -428,7 +430,7 @@ void * mou_paleta(void * arg){
                         sprintf(msg_spawn.s_vel_f, "-1.00");
                         sprintf(msg_spawn.s_vel_c, "0.00");
 
-                        // Dades de la paleta usuari (per a rebots del joc)
+                        // Dades de la paleta usuari
                         sprintf(msg_spawn.s_c_pal, "%d", c_pal);
                         sprintf(msg_spawn.s_m_pal, "%d", m_pal);
                         sprintf(msg_spawn.s_id_sem, "%d", id_sem);
@@ -438,10 +440,11 @@ void * mou_paleta(void * arg){
                         sendM(id_mis, &msg_spawn, sizeof(MISSATGE));
                     }
                 } else {
-                    // Si el missatge no és per a mi, el retorno a la cua de missatges
+                    // Si el missatge no és per a mi, el poso al final de la cua per no perdre'l
                     sendM(id_mis, &msg_rebut, sizeof(MISSATGE));
                 }
-            }
+            } while (1);
+
 
 			if (tecla_global == (num_paleta + '0')){
 
@@ -604,11 +607,6 @@ int main(int n_args, char *ll_args[])
 	id_sem = ini_sem(1);
 	id_mis = ini_mis();
 
-	MISSATGE missatge_enviat, missatge_paleta;
-	missatge_paleta.origen = 'P';
-	missatge_enviat.desti = 'P';
-	missatge_enviat.origen = 'P';
-
 	char s_id_mem[8], s_fil[8], s_col[8], s_retard[8];
 	char s_pos_f[8], s_pos_c[8], s_vel_f[8], s_vel_c[8];
 	char s_c_pal[8], s_m_pal[8], s_id_sem[8], s_id_mis[8];
@@ -647,36 +645,43 @@ int main(int n_args, char *ll_args[])
 	/* 4. Bucle principal d'execució del joc */
 	do
 	{
-
 		tecla_global = win_gettec();
-		MISSATGE missatge_rebut; 
 
-		//tasca nº2 't' CREAR PILOTES
+		// ETAPA 1: tasca nº2 't' sol·licitar a paleta autònoma
 		if (tecla_global == TEC_CREATE && ultima_moguda > 0) {
             MISSATGE msg_teclat;
             msg_teclat.origen = 'M'; // Origen: Main
-            msg_teclat.desti = ultima_moguda + '0'; // Destí: Paleta autònoma específica
+            msg_teclat.desti = ultima_moguda + '0'; // Destí: Paleta autònoma
             sendM(id_mis, &msg_teclat, sizeof(MISSATGE));
         }
 
-        // TORNEM A AFEGIR EL MISSATGE FANTASMA DEL PROCÉS PRINCIPAL!
-        sendM(id_mis, &missatge_enviat, sizeof(MISSATGE));
+        // Lectura de missatges pel procés principal evitant bloqueig (cicle)
+        MISSATGE msg_dummy_main;
+        msg_dummy_main.origen = 'P'; // Dummy Main
+        msg_dummy_main.desti = 'P';
+        sendM(id_mis, &msg_dummy_main, sizeof(MISSATGE));
 
-        if (receiveM(id_mis, &missatge_rebut) > 0) {
-            // El Main nomes processa els missatges que van a 'P' (Principal)
+        do {
+            MISSATGE missatge_rebut;
+            receiveM(id_mis, &missatge_rebut);
+            
             if (missatge_rebut.desti == 'P') {
-                if (missatge_rebut.origen == 'F') { // Petició de crear pilota
+                if (missatge_rebut.origen == 'P') {
+                    break; // Cua de missatges pel main netejada, hem consumit el dummy
+                } else if (missatge_rebut.origen == 'F') { 
+                    // ETAPA 2: Petició de crear pilota rebuda de la paleta
                     crear_pilota(&missatge_rebut);
-                } else if (missatge_rebut.origen == 'T') { // Petició del poder
+                } else if (missatge_rebut.origen == 'T') { 
                     temps_poder += 5000; 
                     waitS(id_sem);
                     comp->poder_actiu = 1;
                     signalS(id_sem);
                 }
             } else {
+                // Si el missatge no és per al Main, l'afegim al darrere de la cua
                 sendM(id_mis, &missatge_rebut, sizeof(MISSATGE));
             }
-		}
+        } while(1);
 
 		//tasca nº1 ' ' STOP 
 		if(tecla_global == TEC_STOP){
