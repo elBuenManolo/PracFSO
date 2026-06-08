@@ -393,41 +393,50 @@ void * mou_paleta(void * arg){
 			win_retard(retard);
 			}
 
+			// 1. ENVIEM UN MISSATGE FANTASMA PER EVITAR EL BLOQUEIG
+            MISSATGE msg_dummy;
+            msg_dummy.origen = 'D'; // 'D' de Dummy
+            msg_dummy.desti = num_paleta + '0';
+            sendM(id_mis, &msg_dummy, sizeof(MISSATGE));
+
 			MISSATGE msg_rebut;
             if (receiveM(id_mis, &msg_rebut) > 0) {
                 // Comprovem si el missatge va dirigit a AQUESTA paleta
                 if (msg_rebut.desti == (num_paleta + '0')) {
                     
-                    // Creem el missatge sol·licitant al Main (desti 'P') la nova pilota
-                    MISSATGE msg_spawn;
-                    msg_spawn.origen = 'F'; // 'F' és el que espera el Main per crear pilotes
-                    msg_spawn.desti = 'P';  // Procés principal
+                    // 2. COMPROVEM QUE L'ORIGEN SIGUI DEL MAIN ('M') I NO EL NOSTRE DUMMY ('D')
+                    if (msg_rebut.origen == 'M') {
+                        // Creem el missatge sol·licitant al Main (desti 'P') la nova pilota
+                        MISSATGE msg_spawn;
+                        msg_spawn.origen = 'F'; // 'F' és el que espera el Main per crear pilotes
+                        msg_spawn.desti = 'P';  // Procés principal
 
-                    // Informació general (convertida a string per l'execlp)
-                    sprintf(msg_spawn.s_id_mem, "%d", id_mem);
-                    sprintf(msg_spawn.s_fil, "%d", n_fil);
-                    sprintf(msg_spawn.s_col, "%d", n_col);
-                    sprintf(msg_spawn.s_retard, "%d", retard);
+                        // Informació general (convertida a string per l'execlp)
+                        sprintf(msg_spawn.s_id_mem, "%d", id_mem);
+                        sprintf(msg_spawn.s_fil, "%d", n_fil);
+                        sprintf(msg_spawn.s_col, "%d", n_col);
+                        sprintf(msg_spawn.s_retard, "%d", retard);
 
-                    // POSICIÓ I VELOCITAT (a sobre del punt mig, V=-1, H=0)
-                    pthread_mutex_lock(&mutex);
-                    float nova_pos_f = (float)paletes[pal].f_pal - 1.0;
-                    float nova_pos_c = (float)paletes[pal].c_pal + ((float)paletes[pal].m_pal / 2.0);
-                    pthread_mutex_unlock(&mutex);
+                        // POSICIÓ I VELOCITAT (a sobre del punt mig, V=-1, H=0)
+                        pthread_mutex_lock(&mutex);
+                        float nova_pos_f = (float)paletes[pal].f_pal - 1.0;
+                        float nova_pos_c = (float)paletes[pal].c_pal + ((float)paletes[pal].m_pal / 2.0);
+                        pthread_mutex_unlock(&mutex);
 
-                    sprintf(msg_spawn.s_pos_f, "%.2f", nova_pos_f);
-                    sprintf(msg_spawn.s_pos_c, "%.2f", nova_pos_c);
-                    sprintf(msg_spawn.s_vel_f, "-1.00");
-                    sprintf(msg_spawn.s_vel_c, "0.00");
+                        sprintf(msg_spawn.s_pos_f, "%.2f", nova_pos_f);
+                        sprintf(msg_spawn.s_pos_c, "%.2f", nova_pos_c);
+                        sprintf(msg_spawn.s_vel_f, "-1.00");
+                        sprintf(msg_spawn.s_vel_c, "0.00");
 
-                    // Dades de la paleta usuari (per a rebots del joc)
-                    sprintf(msg_spawn.s_c_pal, "%d", c_pal);
-                    sprintf(msg_spawn.s_m_pal, "%d", m_pal);
-                    sprintf(msg_spawn.s_id_sem, "%d", id_sem);
-                    sprintf(msg_spawn.s_id_mis, "%d", id_mis);
+                        // Dades de la paleta usuari (per a rebots del joc)
+                        sprintf(msg_spawn.s_c_pal, "%d", c_pal);
+                        sprintf(msg_spawn.s_m_pal, "%d", m_pal);
+                        sprintf(msg_spawn.s_id_sem, "%d", id_sem);
+                        sprintf(msg_spawn.s_id_mis, "%d", id_mis);
 
-                    // Enviem la petició definitiva al main
-                    sendM(id_mis, &msg_spawn, sizeof(MISSATGE));
+                        // Enviem la petició definitiva al main
+                        sendM(id_mis, &msg_spawn, sizeof(MISSATGE));
+                    }
                 } else {
                     // Si el missatge no és per a mi, el retorno a la cua de missatges
                     sendM(id_mis, &msg_rebut, sizeof(MISSATGE));
@@ -649,6 +658,9 @@ int main(int n_args, char *ll_args[])
             msg_teclat.desti = ultima_moguda + '0'; // Destí: Paleta autònoma específica
             sendM(id_mis, &msg_teclat, sizeof(MISSATGE));
         }
+
+        // TORNEM A AFEGIR EL MISSATGE FANTASMA DEL PROCÉS PRINCIPAL!
+        sendM(id_mis, &missatge_enviat, sizeof(MISSATGE));
 
         if (receiveM(id_mis, &missatge_rebut) > 0) {
             // El Main nomes processa els missatges que van a 'P' (Principal)
