@@ -14,6 +14,8 @@
 #define	 INVERS	  1
 #define	 NO_INV	  0
 
+#define TEC_STOP    ' '
+#define TEC_CREATE  't'
 #define TEC_AMUNT   'w'
 #define TEC_AVALL   's'
 #define TEC_DRETA   'd'

@@ -87,7 +87,8 @@ int minuts, segons;
 int comptador_retard = 0;
 
 int tecla_global = 0;
-
+int ultima_moguda;
+bool stop = false;
 pthread_mutex_t mutex = PTHREAD_MUTEX_INITIALIZER;
 
 typedef struct
@@ -106,6 +107,7 @@ typedef struct
 	int npilotes;
 	int fi1;
 	int poder_actiu; // Flag booleà per saber si el poder està actiu
+	bool stop;
 	char tauler;
 } dades_t;
 
@@ -323,6 +325,7 @@ float control_impacte2(int c_pil, float velc0)
 {
 	int distApal;
 	float vel_c;
+	
 
 	distApal = c_pil - c_pal;
 	if (distApal >= 2 * m_pal / 3)
@@ -343,7 +346,9 @@ void * mou_paleta(void * arg){
 	if (num_paleta == 0){
 
 		do{
-			
+			while(stop){
+			win_retard(retard);
+			}
 			if (tecla_global != 0)
 			{
 				if ((tecla_global == TEC_DRETA) && ((c_pal + m_pal) < n_col - 1))
@@ -384,7 +389,12 @@ void * mou_paleta(void * arg){
 		int possible = -1; // Per defecte cap a dalt (-1 disminueix la fila)
 		int pal = num_paleta - 1;			// Com paletes[] està en base 0 i dins de paletes no està la paleta de l'usuari, restem 1 per accedir correctament
 		do{
+			while(stop){
+			win_retard(retard);
+			}
 			if (tecla_global == (num_paleta + '0')){
+
+				ultima_moguda = num_paleta;
 
 				for (int i = 0; i < paletes[pal].m_pal; i++){
 					waitS(id_sem);
@@ -491,10 +501,13 @@ void crear_pilota(MISSATGE *missatge) {
 	npilotes++;
 }
 
+
+
 /* --- Programa Principal --- */
 int main(int n_args, char *ll_args[])
 {
 	int i;
+
 	FILE *fit_conf;
 	int temps_poder = 0; // Variable local per al temporitzador del poder
 
@@ -540,7 +553,8 @@ int main(int n_args, char *ll_args[])
 	id_sem = ini_sem(1);
 	id_mis = ini_mis();
 
-	MISSATGE missatge_enviat;
+	MISSATGE missatge_enviat, missatge_paleta;
+	missatge_paleta.origen = 'P';
 	missatge_enviat.desti = 'P';
 	missatge_enviat.origen = 'P';
 
@@ -586,6 +600,11 @@ int main(int n_args, char *ll_args[])
 		tecla_global = win_gettec();
 		MISSATGE missatge_rebut; 
 
+		//tasca nº2 't' CREAR PILOTES
+		if (tecla_global == TEC_CREATE){
+			missatge_paleta.desti = ultima_moguda + '0';
+			sendM(id_mis, &missatge_enviat, sizeof(missatge_paleta));
+		}
 		sendM(id_mis, &missatge_enviat, sizeof(missatge_enviat));
 		if (receiveM(id_mis, &missatge_rebut) > 0) {
 			if (missatge_rebut.origen == 'F' && missatge_rebut.desti == 'P') {
@@ -600,7 +619,52 @@ int main(int n_args, char *ll_args[])
 			}
 		}
 
-		comptador_retard += retard;
+		//tasca nº1 ' ' STOP 
+		if(tecla_global == TEC_STOP){
+			stop = true;
+			comp->stop = true;
+			fprintf(stderr, "%d", tecla_global);
+		}
+
+		do{
+				comptador_retard += retard;
+				
+				if (comptador_retard >= 1000) /* Ha passat 1 segon */
+				{
+					segons++;
+					if (segons == 60)
+					{
+						minuts++;
+						segons = 0;
+					}
+					comptador_retard = 0;
+				}
+			if(stop == true){
+				tecla_global = win_gettec();
+
+				waitS(id_sem);
+				signalS(id_sem);
+
+				if (temps_poder > 0)
+					sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d | PODER: %.1fs", minuts, segons, comp->nblocs, comp->npilotes, temps_poder / 1000.0);
+				else
+					sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d", minuts, segons, comp->nblocs, comp->npilotes);
+				
+				win_escristr(strin);
+				waitS(id_sem);
+				win_update(); /* Bolcar els canvis fets a la memòria a la pantalla física */
+				signalS(id_sem);
+				
+				win_retard(retard);
+				if (tecla_global == TEC_STOP){
+					stop = false;
+					waitS(id_sem);
+					comp->stop = false;
+					signalS(id_sem);
+				}
+			}
+		}
+		while(stop);
 		
 		if (temps_poder > 0) {
 			temps_poder -= retard;
@@ -612,16 +676,6 @@ int main(int n_args, char *ll_args[])
 			}
 		}
 
-		if (comptador_retard >= 1000) /* Ha passat 1 segon */
-		{
-			segons++;
-			if (segons == 60)
-			{
-				minuts++;
-				segons = 0;
-			}
-			comptador_retard = 0;
-		}
 		
 		if (temps_poder > 0)
 			sprintf(strin, "Temps: %02d:%02d | Blocs: %d | Pilotes: %d | PODER: %.1fs", minuts, segons, comp->nblocs, comp->npilotes, temps_poder / 1000.0);
@@ -633,6 +687,7 @@ int main(int n_args, char *ll_args[])
 		win_update(); /* Bolcar els canvis fets a la memòria a la pantalla física */
 		signalS(id_sem);
 		win_retard(retard); /* Pausar el procés el temps establert abans del següent frame */
+	
 	} while (!comp->fi1 && comp->nblocs > 0 && comp->npilotes > 0); /* Sortir si demanem sortir (!fi1) o acaba la partida (!fi2) */
 
 	/* 5. Comprovació de final de joc i missatges de sortida */

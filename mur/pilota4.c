@@ -6,6 +6,7 @@
 
 #include <stdio.h>
 #include <stdlib.h>
+#include <stdbool.h>
 #include <string.h>
 #include "winsuport2.h"
 #include "memoria.h"
@@ -68,6 +69,7 @@ typedef struct
     int npilotes;
     int fi1;
     int poder_actiu; // Flag booleà per saber si el poder està actiu
+    bool stop;
     char tauler;
 } dades_t;
 
@@ -314,29 +316,34 @@ int main(int n_args, char *ll_args[])
 
     do
     {
-        automsg.desti = 'N';                    // N = Ningú 
-        automsg.origen = 'F';                   // F = Fill
-        sendM(id_mis, &automsg, sizeof(missatge));
-
-        receiveM(id_mis, &missatge);
-        if (missatge.origen == 'F' && missatge.desti == 'F'){
-            vel_f = -vel_f + missatge.velf_pilota;
-            vel_c = -vel_c + missatge.velc_pilota;
-        } else if (missatge.origen == 'F' && missatge.desti == 'P'){
-            sendM(id_mis, &missatge, sizeof(missatge));
+        if(comp->stop == true){
+            win_retard(retard);
         }
-        fi2 = mou_pilota();
-        if (fi2){
-            waitS(id_sem);
-            if (comp->npilotes <= 1){
-                MISSATGE msg;
-                msg.origen = 'F';               // Origen i destí -> F = Fill (Pilota)
-                msg.desti = 'F';
-                msg.velf_pilota = vel_f;        // Velocitats de la nova pilota
-                msg.velc_pilota = vel_c;
-                sendM(id_mis, &msg, sizeof(msg));
+        else{
+            automsg.desti = 'N';                    // N = Ningú 
+            automsg.origen = 'F';                   // F = Fill
+            sendM(id_mis, &automsg, sizeof(missatge));
+
+            receiveM(id_mis, &missatge);
+            if (missatge.origen == 'F' && missatge.desti == 'F'){
+                vel_f = -vel_f + missatge.velf_pilota;
+                vel_c = -vel_c + missatge.velc_pilota;
+            } else if (missatge.origen == 'F' && missatge.desti == 'P'){
+                sendM(id_mis, &missatge, sizeof(missatge));
             }
-            signalS(id_sem);    
+            fi2 = mou_pilota();
+            if (fi2){
+                waitS(id_sem);
+                if (comp->npilotes <= 1){
+                    MISSATGE msg;
+                    msg.origen = 'F';               // Origen i destí -> F = Fill (Pilota)
+                    msg.desti = 'F';
+                    msg.velf_pilota = vel_f;        // Velocitats de la nova pilota
+                    msg.velc_pilota = vel_c;
+                    sendM(id_mis, &msg, sizeof(msg));
+                }
+                signalS(id_sem);    
+            }
         }
         win_retard(retard);
     } while (!fi2 && comp->npilotes > 0 && !comp->fi1);
